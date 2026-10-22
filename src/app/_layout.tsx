@@ -1,18 +1,69 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import "react-native-gesture-handler";
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import React from "react";
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import * as Notifications from "expo-notifications";
 
-SplashScreen.preventAutoHideAsync();
+import {
+  AppThemeProvider,
+  useAppTheme,
+} from "../../context/app-theme-context";
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+import { SecurityProvider } from "../security/SecurityProvider";
+import SecurityGate from "../security/SecurityGate";
+
+// Notification handler — keep this outside React components
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
+
+function RootNavigator() {
+  const { isDark, colors } = useAppTheme();
+
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SecurityProvider>
+        <StatusBar style={isDark ? "light" : "dark"} />
+
+        <SecurityGate>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              animation: "fade",
+              contentStyle: {
+                backgroundColor: colors.background,
+              },
+            }}
+          >
+            <Stack.Screen
+              name="index"
+              options={{ headerShown: false }}
+            />
+
+            <Stack.Screen
+              name="security"
+              options={{
+                headerShown: false,
+                animation: "fade",
+              }}
+            />
+          </Stack>
+        </SecurityGate>
+      </SecurityProvider>
+    </GestureHandlerRootView>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <AppThemeProvider>
+      <RootNavigator />
+    </AppThemeProvider>
   );
 }
