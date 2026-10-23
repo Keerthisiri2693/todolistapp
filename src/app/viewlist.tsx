@@ -169,7 +169,7 @@ const makeReminderDateTime = (
 // ============================================================
 // API
 // ============================================================
-const API_BASE_URL = "https://todolistbackend-855c.onrender.com/";
+const API_BASE_URL = "https://todolistbackend-855c.onrender.com";
 
 // ============================================================
 // THEME

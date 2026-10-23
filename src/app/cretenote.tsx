@@ -52,7 +52,7 @@ import { captureRef } from "react-native-view-shot";
 import { useAppTheme } from "../../context/app-theme-context";
 import { NitroDigitalInk } from "../../utils/NitroDigitalInk.web";
 
-const API_BASE_URL = "https://todolistbackend-855c.onrender.com/";
+const API_BASE_URL = "https://todolistbackend-855c.onrender.com";
 
 type TodoStatus = "Pending" | "Completed" | "Overdue";
 

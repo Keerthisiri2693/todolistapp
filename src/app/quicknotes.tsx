@@ -389,7 +389,7 @@ export default function CreateQuickNote({
   onBack,
   onCreate,
   // Android emulator: 10.0.2.2 = your computer. Real phone: use your computer's LAN IP or your server URL
-  apiUrl = "https://todolistbackend-855c.onrender.com//api/createTodolist",
+  apiUrl = "https://todolistbackend-855c.onrender.com/api/createTodolist",
   noteType = "quick", // "quick" | "todo"
   recurring = "none", // "none" | "daily" | "weekly" | "monthly" | "yearly"
   authToken,

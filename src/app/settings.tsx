@@ -152,7 +152,7 @@ export default function AppSettingsScreen() {
       }
 
       const response = await axios.post(
-        "https://todolistbackend-855c.onrender.com//api/feedback",
+        "https://todolistbackend-855c.onrender.com/api/feedback",
         {
           message,
           feedbackType,

@@ -13,7 +13,7 @@ import {
 import { Calendar, DateData } from "react-native-calendars";
 
 const API_BASE_URL =
-  "https://todolistbackend-855c.onrender.com//api/tamil-calendar";
+  "https://todolistbackend-855c.onrender.com/api/tamil-calendar";
 const LOCATION_KEY = "thiruvarur";
 const LOCATION_LABEL = "திருவாரூர், தமிழ்நாடு";
 const COLORS = {

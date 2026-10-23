@@ -287,7 +287,7 @@ export default function RegisterScreen() {
       {/* Login */}
       <TouchableOpacity
         onPress={() =>
-          router.replace("/auth/loginscreen")
+          router.replace("/loginscreen")
         }
         disabled={loading}
       >
