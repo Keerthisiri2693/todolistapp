@@ -243,6 +243,10 @@ function VideoPreview({ uri }: VideoPreviewProps) {
 export default function TodolistScreen() {
   const { isDark, colors: appTheme } = useAppTheme();
   const [reorderChecklistVisible, setReorderChecklistVisible] = useState(false);
+  const [showDesktopDatePicker, setShowDesktopDatePicker] = useState(false);
+  const [desktopPickerMode, setDesktopPickerMode] = useState<
+    "due" | "reminder"
+  >("due");
 
   const [reorderChecklistItems, setReorderChecklistItems] = useState<
     ReorderChecklistItem[]
@@ -1492,72 +1496,18 @@ export default function TodolistScreen() {
             0,
           );
 
-          DateTimePickerAndroid.open({
-            value: selected,
-            mode: "time",
-            display: "clock",
-            onChange: (timeEvent, selectedTime) => {
-              if (timeEvent.type !== "set" || !selectedTime) return;
-
-              const result = new Date(selected);
-              result.setHours(
-                selectedTime.getHours(),
-                selectedTime.getMinutes(),
-                0,
-                0,
-              );
-
-              setDueDateTime(result);
-              setTodoDate(toDateInput(result));
-              setDateText(toDateInput(result));
-            },
-          });
+          const value = toDateInput(selected);
+          setTodoDate(value);
+          setDateText(value);
+          setDueDateTime(selected);
         },
       });
-
       return;
     }
 
-    if (Platform.OS === "web") {
-      const input = document.createElement("input");
-      input.type = "datetime-local";
-      input.value = toLocalDateTimeInput(initialDate);
-      input.style.position = "fixed";
-      input.style.opacity = "0";
-      input.style.pointerEvents = "none";
-
-      document.body.appendChild(input);
-
-      input.addEventListener(
-        "change",
-        () => {
-          if (input.value) {
-            const selected = new Date(input.value);
-
-            if (!Number.isNaN(selected.getTime())) {
-              setDueDateTime(selected);
-              setTodoDate(toDateInput(selected));
-              setDateText(toDateInput(selected));
-            }
-          }
-
-          input.remove();
-        },
-        { once: true },
-      );
-
-      input.addEventListener("cancel", () => input.remove(), {
-        once: true,
-      });
-
-      input.showPicker();
-      return;
-    }
-
-    Alert.alert(
-      "Date picker",
-      "Date and time selection is not supported on this platform.",
-    );
+    // Electron / desktop web
+    setDesktopPickerMode("due");
+    setShowDesktopDatePicker(true);
   }, [dateText, dueDateTime]);
 
   const toLocalDateTimeInput = (date: Date) => {
@@ -4102,6 +4052,107 @@ export default function TodolistScreen() {
               bg="#F1EBFF"
               onPress={() => setDrawingModalVisible(true)}
             />
+
+            {showDesktopDatePicker && (
+              <View
+                style={{
+                  padding: 16,
+                  marginVertical: 12,
+                  borderRadius: 12,
+                  backgroundColor: "#FFFFFF",
+                  borderWidth: 1,
+                  borderColor: "#DDE7E5",
+                  gap: 12,
+                }}
+              >
+                <Text style={{ fontSize: 16, fontWeight: "600" }}>
+                  {desktopPickerMode === "due"
+                    ? "Select due date and time"
+                    : "Select reminder"}
+                </Text>
+
+                <input
+                  type="date"
+                  defaultValue={
+                    toDateInput(
+                      desktopPickerMode === "due"
+                        ? dueDateTime || new Date()
+                        : alarmDate || new Date(Date.now() + 60 * 60 * 1000),
+                    ).split("T")[0]
+                  }
+                  onChange={(event) => {
+                    const datePart = event.currentTarget.value;
+                    if (!datePart) return;
+
+                    const current =
+                      desktopPickerMode === "due" ? dueDateTime : alarmDate;
+                    const result = current ? new Date(current) : new Date();
+
+                    const [year, month, day] = datePart.split("-").map(Number);
+                    result.setFullYear(year, month - 1, day);
+
+                    if (desktopPickerMode === "due") {
+                      setDueDateTime(result);
+                      setTodoDate(toDateInput(result));
+                      setDateText(toDateInput(result));
+                    } else {
+                      setAlarmDate(result);
+                    }
+                  }}
+                  style={{ padding: 10, fontSize: 15 }}
+                />
+
+                <input
+                  type="time"
+                  defaultValue={(() => {
+                    const date =
+                      desktopPickerMode === "due"
+                        ? dueDateTime || new Date()
+                        : alarmDate || new Date(Date.now() + 60 * 60 * 1000);
+
+                    return `${String(date.getHours()).padStart(2, "0")}:${String(
+                      date.getMinutes(),
+                    ).padStart(2, "0")}`;
+                  })()}
+                  onChange={(event) => {
+                    const timePart = event.currentTarget.value;
+                    if (!timePart) return;
+
+                    const [hours, minutes] = timePart.split(":").map(Number);
+                    const result = new Date(
+                      desktopPickerMode === "due"
+                        ? dueDateTime || new Date()
+                        : alarmDate || new Date(),
+                    );
+
+                    result.setHours(hours, minutes, 0, 0);
+
+                    if (desktopPickerMode === "due") {
+                      setDueDateTime(result);
+                      setTodoDate(toDateInput(result));
+                      setDateText(toDateInput(result));
+                    } else {
+                      setAlarmDate(result);
+                    }
+                  }}
+                  style={{ padding: 10, fontSize: 15 }}
+                />
+
+                <Pressable
+                  onPress={() => setShowDesktopDatePicker(false)}
+                  style={{
+                    padding: 12,
+                    borderRadius: 8,
+                    backgroundColor: "#DDF5EE",
+                    alignItems: "center",
+                  }}
+                >
+                  <Text style={{ fontWeight: "600", color: "#008F83" }}>
+                    Done
+                  </Text>
+                </Pressable>
+              </View>
+            )}
             <View
               style={[
                 uiStyles.recurringCard,
