@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "933369506462",
+    "project_id": "permanentid-de0e7",
+    "storage_bucket": "permanentid-de0e7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:933369506462:android:a801d7aa31dee6733ba98f",
+        "android_client_info": {
+          "package_name": "com.keerthi2693.ChatApp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAy2A0U15yVZvxOSYKJsj7REnpjwGYkcPs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:933369506462:android:4b37d119197e1d4c3ba98f",
+        "android_client_info": {
+          "package_name": "com.keerthi2693.MyTodoApp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAy2A0U15yVZvxOSYKJsj7REnpjwGYkcPs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
