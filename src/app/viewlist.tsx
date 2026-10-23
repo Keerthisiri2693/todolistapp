@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import axios from "axios";
 import * as Clipboard from "expo-clipboard";
 import { router, useFocusEffect } from "expo-router";
@@ -11,6 +12,7 @@ import {
   Image,
   ImageBackground,
   Modal,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -21,34 +23,43 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAppTheme } from "../../context/app-theme-context";
 
 // ============================================================
 // API
 // ============================================================
-const API_BASE_URL = "http://192.168.1.5:5001";
+const API_BASE_URL = "https://todolistbackend-855c.onrender.com";
 const LOCAL_QUICK_NOTES_KEY = "local-quick-notes";
 
 // ============================================================
 // THEME
 // ============================================================
 const COLORS = {
-  bg: "#F3F4FA",
+  bg: "#F2F8F5",
   surface: "#FFFFFF",
-  ink: "#12142B",
-  sub: "#6A6F85",
-  mute: "#A0A5B8",
-  line: "#E8EAF3",
-  chip: "#ECEEF8",
-  primary: "#5146F5",
-  primarySoft: "#E9E7FF",
-  hero: "#17164A",
-  heroSoft: "#2A2878",
-  today: "#2F7CF6",
-  upcoming: "#8B5CF6",
-  done: "#14B8A6",
-  danger: "#EF4444",
-  dangerSoft: "#FEE8E8",
-  amber: "#F59E0B",
+  ink: "#18352B",
+  sub: "#64796F",
+  mute: "#9BAEA4",
+  line: "#DFEBE4",
+  chip: "#E8F3EC",
+
+  // Mint primary theme
+  primary: "#69B99A",
+  primarySoft: "#E0F3E9",
+
+  // Hero section
+  hero: "#183D30",
+  heroSoft: "#285B47",
+
+  // Status colors
+  today: "#4A9B78",
+  upcoming: "#80A995",
+  done: "#31966B",
+
+  // Alerts
+  danger: "#D94848",
+  dangerSoft: "#FCE8E8",
+  amber: "#D99A35",
 };
 
 // Shared short alias used by the existing screen styles.
@@ -57,7 +68,7 @@ const NOTE_IMAGE_PATTERNS: Record<
   string,
   "plain" | "lined" | "dotted" | "grid"
 > = {
-  // Patterns are assigned by image ID; the gallery currently uses cute1–cute19.
+  // Patterns are assigned by image ID; the gallery currently uses cute1â€“cute19.
   cute1: "lined",
   cute2: "dotted",
   cute3: "grid",
@@ -77,7 +88,7 @@ const NOTE_IMAGE_PATTERNS: Record<
   cute17: "grid",
   cute18: "plain",
   cute19: "lined",
-  // Also support the note1.jpg–note11.jpg naming scheme if you use those assets.
+  // Also support the note1.jpgâ€“note11.jpg naming scheme if you use those assets.
   "note1.jpg": "lined",
   "note2.jpg": "dotted",
   "note3.jpg": "grid",
@@ -214,115 +225,115 @@ const NOTE_BACKGROUND_IMAGES = [
     id: "cute1",
     label: "Cute 1",
     category: "Cute",
-    source: require("../assets/images/cute1.jpg"),
+    source: require("../../assets/images/cute1.jpg"),
   },
   {
     id: "cute2",
     label: "Cute 2",
     category: "Cute",
-    source: require("../assets/images/cute2.jpg"),
+    source: require("../../assets/images/cute2.jpg"),
   },
   {
     id: "cute3",
     label: "Cute 3",
     category: "Cute",
-    source: require("../assets/images/cute3.jpg"),
+    source: require("../../assets/images/cute3.jpg"),
   },
   {
     id: "cute4",
     label: "Cute 4",
     category: "Cute",
-    source: require("../assets/images/cute4.jpg"),
+    source: require("../../assets/images/cute4.jpg"),
   },
   {
     id: "cute5",
     label: "Cute 5",
     category: "Cute",
-    source: require("../assets/images/cute5.jpg"),
+    source: require("../../assets/images/cute5.jpg"),
   },
   {
     id: "cute6",
     label: "Cute 6",
     category: "Cute",
-    source: require("../assets/images/cute6.jpg"),
+    source: require("../../assets/images/cute6.jpg"),
   },
   {
     id: "cute7",
     label: "Cute 7",
     category: "Cute",
-    source: require("../assets/images/cute7.jpg"),
+    source: require("../../assets/images/cute7.jpg"),
   },
   {
     id: "cute8",
     label: "Cute 8",
     category: "Cute",
-    source: require("../assets/images/cute8.jpg"),
+    source: require("../../assets/images/cute8.jpg"),
   },
   {
     id: "cute9",
     label: "Cute 9",
     category: "Cute",
-    source: require("../assets/images/cute9.jpg"),
+    source: require("../../assets/images/cute9.jpg"),
   },
   {
     id: "cute10",
     label: "Cute 10",
     category: "Cute",
-    source: require("../assets/images/cute10.jpg"),
+    source: require("../../assets/images/cute10.jpg"),
   },
   {
     id: "cute11",
     label: "Cute 11",
     category: "Cute",
-    source: require("../assets/images/cute11.jpg"),
+    source: require("../../assets/images/cute11.jpg"),
   },
   {
     id: "cute12",
     label: "Cute 12",
     category: "Cute",
-    source: require("../assets/images/cute12.jpg"),
+    source: require("../../assets/images/cute12.jpg"),
   },
   {
     id: "cute13",
     label: "Cute 13",
     category: "Cute",
-    source: require("../assets/images/cute13.jpg"),
+    source: require("../../assets/images/cute13.jpg"),
   },
   {
     id: "cute14",
     label: "Cute 14",
     category: "Cute",
-    source: require("../assets/images/cute14.jpg"),
+    source: require("../../assets/images/cute14.jpg"),
   },
   {
     id: "cute15",
     label: "Cute 15",
     category: "Cute",
-    source: require("../assets/images/cute15.jpg"),
+    source: require("../../assets/images/cute15.jpg"),
   },
   {
     id: "cute16",
     label: "Cute 16",
     category: "Cute",
-    source: require("../assets/images/cute16.jpg"),
+    source: require("../../assets/images/cute16.jpg"),
   },
   {
     id: "cute17",
     label: "Cute 17",
     category: "Cute",
-    source: require("../assets/images/cute17.jpg"),
+    source: require("../../assets/images/cute17.jpg"),
   },
   {
     id: "cute18",
     label: "Cute 18",
     category: "Cute",
-    source: require("../assets/images/cute18.jpg"),
+    source: require("../../assets/images/cute18.jpg"),
   },
   {
     id: "cute19",
     label: "Cute 19",
     category: "Cute",
-    source: require("../assets/images/cute19.jpg"),
+    source: require("../../assets/images/cute19.jpg"),
   },
 ];
 const NOTE_BACKGROUND_CATEGORIES = ["All", "Cute"];
@@ -331,6 +342,14 @@ const NOTE_BACKGROUND_CATEGORIES = ["All", "Cute"];
 // SCREEN
 // ============================================================
 export default function ViewTodolistScreen() {
+  const {
+    theme: sharedTheme,
+    isDark,
+    colors: sharedColors,
+    setTheme,
+  } = useAppTheme();
+  const appTheme: "light" | "dark" = isDark ? "dark" : "light";
+
   const [todos, setTodos] = useState<Todo[]>([]);
   const [token, setToken] = useState("");
   const [loading, setLoading] = useState(true);
@@ -345,12 +364,20 @@ export default function ViewTodolistScreen() {
     "date" | "title" | "modified" | "priority"
   >("date");
   const [gridLayout, setGridLayout] = useState(false);
+  const [calendarView, setCalendarView] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  });
   const [organizationMeta, setOrganizationMeta] = useState<
     Record<string, NoteOrganizationMeta>
   >({});
   const [noteFolders, setNoteFolders] = useState<NoteFolder[]>([]);
   const [noteCategories, setNoteCategories] = useState<NoteCategory[]>([]);
-
   const [collectionFilter, setCollectionFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [organizationModal, setOrganizationModal] =
@@ -365,6 +392,24 @@ export default function ViewTodolistScreen() {
   const [tagTodoId, setTagTodoId] = useState<string | null>(null);
   const [menuVisible, setMenuVisible] = useState(false);
   const [actionTodo, setActionTodo] = useState<Todo | null>(null);
+  const [reminderTodo, setReminderTodo] = useState<Todo | null>(null);
+  const [reminderModalVisible, setReminderModalVisible] = useState(false);
+  const [reminderDateValue, setReminderDateValue] = useState(new Date());
+  const [reminderTimeValue, setReminderTimeValue] = useState(() => {
+    const next = new Date();
+    next.setMinutes(next.getMinutes() + 5, 0, 0);
+    return next;
+  });
+  const [reminderBusy, setReminderBusy] = useState(false);
+  const [lockDialogVisible, setLockDialogVisible] = useState(false);
+  const [lockDialogMode, setLockDialogMode] = useState<
+    "lock" | "unlock" | "changePin"
+  >("lock");
+  const [lockTarget, setLockTarget] = useState<Todo | null>(null);
+  const [currentLockPin, setCurrentLockPin] = useState("");
+  const [newLockPin, setNewLockPin] = useState("");
+  const [confirmLockPin, setConfirmLockPin] = useState("");
+  const [lockRequestBusy, setLockRequestBusy] = useState(false);
   const [detailsVisible, setDetailsVisible] = useState(false);
   const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
   const [selectedSketchUri, setSelectedSketchUri] = useState<string | null>(
@@ -375,7 +420,6 @@ export default function ViewTodolistScreen() {
   const [backgroundGalleryVisible, setBackgroundGalleryVisible] =
     useState(false);
   const [backgroundCategory, setBackgroundCategory] = useState("All");
-  const [appTheme, setAppTheme] = useState<"light" | "dark">("light");
   const [accentColor, setAccentColor] = useState(C.primary);
   const [defaultNoteColor, setDefaultNoteColor] = useState("#FFF8DC");
   const [notePattern, setNotePattern] = useState<
@@ -394,6 +438,10 @@ export default function ViewTodolistScreen() {
   const [showHero, setShowHero] = useState(true);
   const [showQuickNotes, setShowQuickNotes] = useState(true);
   const [showCategories, setShowCategories] = useState(true);
+  const [homeLayoutDensity, setHomeLayoutDensity] = useState<
+    "compact" | "comfortable" | "spacious"
+  >("comfortable");
+  const [showHomeGreeting, setShowHomeGreeting] = useState(true);
   const appearanceColors = [
     "#FFF8DC",
     "#FFFFFF",
@@ -422,6 +470,9 @@ export default function ViewTodolistScreen() {
         showHero,
         showQuickNotes,
         showCategories,
+        homeLayout: homeLayoutDensity,
+        showHomeGreeting,
+        showHomeStats: showHero,
         ...patch,
       };
       try {
@@ -444,12 +495,15 @@ export default function ViewTodolistScreen() {
       showHero,
       showQuickNotes,
       showCategories,
+      homeLayoutDensity,
+      showHomeGreeting,
     ],
   );
 
   const updateAppearance = useCallback(
     (patch: Record<string, any>) => {
-      if (patch.appTheme !== undefined) setAppTheme(patch.appTheme);
+      if (patch.appTheme !== undefined)
+        void setTheme(patch.appTheme === "dark" ? "Dark" : "Light");
       if (patch.accentColor !== undefined) setAccentColor(patch.accentColor);
       if (patch.defaultNoteColor !== undefined)
         setDefaultNoteColor(patch.defaultNoteColor);
@@ -467,37 +521,49 @@ export default function ViewTodolistScreen() {
         setShowCategories(patch.showCategories);
       void saveAppearance(patch);
     },
-    [saveAppearance],
+    [saveAppearance, setTheme],
   );
 
-  useEffect(() => {
-    void (async () => {
-      try {
-        const raw = await AsyncStorage.getItem("notes:appearance-settings");
-        if (!raw) return;
-        const a = JSON.parse(raw);
-        if (a.appTheme) setAppTheme(a.appTheme);
-        if (a.accentColor) setAccentColor(a.accentColor);
-        if (a.defaultNoteColor) setDefaultNoteColor(a.defaultNoteColor);
-        if (["plain", "lined", "dotted", "grid"].includes(a.notePattern))
-          setNotePattern(a.notePattern);
-        if (["classic", "minimal", "rounded"].includes(a.notebookStyle))
-          setNotebookStyle(a.notebookStyle);
-        if (["small", "medium", "large"].includes(a.noteFontSize))
-          setNoteFontSize(a.noteFontSize);
-        if (["System", "serif", "monospace"].includes(a.noteFontFamily))
-          setNoteFontFamily(a.noteFontFamily);
-
-        if (typeof a.showHero === "boolean") setShowHero(a.showHero);
-        if (typeof a.showQuickNotes === "boolean")
-          setShowQuickNotes(a.showQuickNotes);
-        if (typeof a.showCategories === "boolean")
-          setShowCategories(a.showCategories);
-      } catch (error) {
-        console.warn("Could not load appearance settings", error);
-      }
-    })();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      void (async () => {
+        try {
+          const raw = await AsyncStorage.getItem("notes:appearance-settings");
+          if (!active || !raw) return;
+          const a = JSON.parse(raw);
+          if (a.accentColor) setAccentColor(a.accentColor);
+          if (a.defaultNoteColor) setDefaultNoteColor(a.defaultNoteColor);
+          if (["plain", "lined", "dotted", "grid"].includes(a.notePattern))
+            setNotePattern(a.notePattern);
+          if (["classic", "minimal", "rounded"].includes(a.notebookStyle))
+            setNotebookStyle(a.notebookStyle);
+          if (["small", "medium", "large"].includes(a.noteFontSize))
+            setNoteFontSize(a.noteFontSize);
+          if (["System", "serif", "monospace"].includes(a.noteFontFamily))
+            setNoteFontFamily(a.noteFontFamily);
+          if (typeof a.showHero === "boolean") setShowHero(a.showHero);
+          if (typeof a.showQuickNotes === "boolean")
+            setShowQuickNotes(a.showQuickNotes);
+          if (typeof a.showCategories === "boolean")
+            setShowCategories(a.showCategories);
+          if (
+            a.homeLayout === "compact" ||
+            a.homeLayout === "comfortable" ||
+            a.homeLayout === "spacious"
+          )
+            setHomeLayoutDensity(a.homeLayout);
+          if (typeof a.showHomeGreeting === "boolean")
+            setShowHomeGreeting(a.showHomeGreeting);
+        } catch (error) {
+          console.warn("Could not load appearance settings", error);
+        }
+      })();
+      return () => {
+        active = false;
+      };
+    }, []),
+  );
 
   // Alerts/modals can't open while another Modal is closing on iOS, so defer.
   const afterModal = useCallback((fn: () => void) => {
@@ -513,7 +579,7 @@ export default function ViewTodolistScreen() {
       if (storedToken) setToken(storedToken);
       return storedToken || "";
     } catch (error) {
-      console.error("❌ LOAD AUTH ERROR:", error);
+      console.error("âŒ LOAD AUTH ERROR:", error);
       return "";
     }
   }, []);
@@ -610,7 +676,7 @@ export default function ViewTodolistScreen() {
         });
       } catch (error: any) {
         console.error(
-          "❌ LOAD TODOS ERROR:",
+          "âŒ LOAD TODOS ERROR:",
           error?.response?.data || error?.message || error,
         );
         setTodos([]);
@@ -802,10 +868,27 @@ export default function ViewTodolistScreen() {
     persistOrganization,
     selectedOrganizationColor,
   ]);
+  type PickerOption = {
+    text: string;
+    onPress?: () => void;
+    style?: "cancel" | "destructive" | "default";
+  };
 
+  const [optionPicker, setOptionPicker] = useState<{
+    title: string;
+    message: string;
+    options: PickerOption[];
+  } | null>(null);
+
+  const showOptions = useCallback(
+    (title: string, message: string, options: PickerOption[]) => {
+      setOptionPicker({ title, message, options });
+    },
+    [],
+  );
   const chooseFolderForNote = useCallback(
     (todo: Todo) => {
-      Alert.alert("Move note", "Choose a destination folder", [
+      showOptions("Move note", "Choose a destination folder", [
         {
           text: "No folder",
           onPress: () => void updateNoteMeta(todo, { folderId: undefined }),
@@ -814,25 +897,31 @@ export default function ViewTodolistScreen() {
           text: folder.name,
           onPress: () => void updateNoteMeta(todo, { folderId: folder.id }),
         })),
-        { text: "Cancel", style: "cancel" as const },
+        {
+          text: "Cancel",
+          style: "cancel" as const,
+        },
       ]);
     },
-    [noteFolders, updateNoteMeta],
+    [noteFolders, showOptions, updateNoteMeta],
   );
 
   const chooseCategoryForNote = useCallback(
     (todo: Todo) => {
       const current = getOrganizationMeta(todo).categoryIds || [];
+
       if (!noteCategories.length) {
-        Alert.alert(
+        showOptions(
           "No categories yet",
-          "Create one from the menu (⋮) → New category.",
+          "Create one from the menu (â‹®) â†’ New category.",
+          [{ text: "OK", style: "cancel" }],
         );
         return;
       }
-      Alert.alert("Categories", "Tap a category to add or remove it.", [
+
+      showOptions("Categories", "Tap a category to add or remove it.", [
         ...noteCategories.map((category) => ({
-          text: `${current.includes(category.id) ? "✓ " : ""}${category.name}`,
+          text: `${current.includes(category.id) ? "âœ“ " : ""}${category.name}`,
           onPress: () =>
             void updateNoteMeta(todo, {
               categoryIds: current.includes(category.id)
@@ -843,12 +932,12 @@ export default function ViewTodolistScreen() {
         { text: "Cancel", style: "cancel" as const },
       ]);
     },
-    [getOrganizationMeta, noteCategories, updateNoteMeta],
+    [getOrganizationMeta, noteCategories, showOptions, updateNoteMeta],
   );
 
   const choosePriority = useCallback(
     (todo: Todo) => {
-      Alert.alert("Priority", "Choose priority", [
+      showOptions("Priority", "Choose priority", [
         {
           text: "Low",
           onPress: () => void updateNoteMeta(todo, { priority: "Low" }),
@@ -868,7 +957,7 @@ export default function ViewTodolistScreen() {
         { text: "Cancel", style: "cancel" as const },
       ]);
     },
-    [updateNoteMeta],
+    [showOptions, updateNoteMeta],
   );
 
   const manageTags = useCallback(
@@ -881,23 +970,44 @@ export default function ViewTodolistScreen() {
     [getTodoKey],
   );
 
+  const showConfirmation = useCallback(
+    (title: string, message: string, onConfirm: () => void) => {
+      if (Platform.OS === "web") {
+        const confirmed = window.confirm(`${title}\n\n${message}`);
+
+        if (confirmed) {
+          onConfirm();
+        }
+
+        return;
+      }
+
+      Alert.alert(title, message, [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Confirm",
+          style: "destructive",
+          onPress: onConfirm,
+        },
+      ]);
+    },
+    [],
+  );
+
   const moveToTrash = useCallback(
     (todo: Todo) => {
-      Alert.alert(
+      showConfirmation(
         "Move to Trash",
-        `Move “${todo.title || "Untitled note"}” to Trash?`,
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Move to Trash",
-            style: "destructive",
-            onPress: () =>
-              void updateNoteMeta(todo, { trashed: true, archived: false }),
-          },
-        ],
+        `Move "${todo.title || "Untitled note"}" to Trash?`,
+        () => {
+          void updateNoteMeta(todo, {
+            trashed: true,
+            archived: false,
+          });
+        },
       );
     },
-    [updateNoteMeta],
+    [showConfirmation, updateNoteMeta],
   );
 
   const restoreFromTrash = useCallback(
@@ -909,59 +1019,79 @@ export default function ViewTodolistScreen() {
 
   const permanentlyDeleteTodo = useCallback(
     (todo: Todo) => {
-      Alert.alert(
+      showConfirmation(
         "Delete forever",
-        `“${todo.title || "Untitled note"}” will be permanently deleted. This can't be undone.`,
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Delete forever",
-            style: "destructive",
-            onPress: async () => {
-              const id = getTodoKey(todo);
-              try {
-                const currentToken =
-                  token || (await AsyncStorage.getItem("login_token")) || "";
-                if (currentToken && todo.tdlId) {
-                  const response = await axios.post(
-                    `${API_BASE_URL}/api/deleteTodos/${encodeURIComponent(todo.tdlId)}`,
-                    {},
-                    {
-                      headers: {
-                        Authorization: getAuthorizationHeader(currentToken),
-                      },
+        `"${todo.title || "Untitled note"}" will be permanently deleted. This can't be undone.`,
+        () => {
+          void (async () => {
+            const id = getTodoKey(todo);
+
+            try {
+              const currentToken =
+                token || (await AsyncStorage.getItem("login_token")) || "";
+
+              if (currentToken && todo.tdlId) {
+                const response = await axios.post(
+                  `${API_BASE_URL}/api/deleteTodos/${encodeURIComponent(
+                    todo.tdlId,
+                  )}`,
+                  {},
+                  {
+                    headers: {
+                      Authorization: getAuthorizationHeader(currentToken),
                     },
-                  );
-                  if (response.data?.success !== true)
-                    throw new Error("Backend deletion failed");
+                  },
+                );
+
+                if (response.data?.success !== true) {
+                  throw new Error("Backend deletion failed");
                 }
-                const next = { ...organizationMeta };
-                delete next[id];
-                await persistOrganization(next);
-                setTodos((items) =>
-                  items.filter((item) => getTodoKey(item) !== id),
-                );
-              } catch (error: any) {
-                Alert.alert(
-                  "Delete failed",
-                  error?.response?.data?.message ||
-                    error?.message ||
-                    "Could not permanently delete this note.",
-                );
               }
-            },
-          },
-        ],
+
+              const next = { ...organizationMeta };
+              delete next[id];
+
+              await persistOrganization(next);
+
+              setTodos((items) =>
+                items.filter((item) => getTodoKey(item) !== id),
+              );
+            } catch (error: any) {
+              showConfirmation(
+                "Delete failed",
+                error?.response?.data?.message ||
+                  error?.message ||
+                  "Could not permanently delete this note.",
+                () => {},
+              );
+            }
+          })();
+        },
       );
     },
-    [getTodoKey, organizationMeta, persistOrganization, token],
+    [
+      getTodoKey,
+      organizationMeta,
+      persistOrganization,
+      showConfirmation,
+      token,
+    ],
   );
+
+  const showMessage = useCallback((title: string, message: string) => {
+    if (Platform.OS === "web") {
+      window.alert(`${title}\n\n${message}`);
+      return;
+    }
+
+    Alert.alert(title, message);
+  }, []);
 
   const deleteFolder = useCallback(
     (folder: NoteFolder) => {
       Alert.alert(
         "Delete folder",
-        `Delete “${folder.name}”? Notes stay and become unfiled.`,
+        `Delete â€œ${folder.name}â€? Notes stay and become unfiled.`,
         [
           { text: "Cancel", style: "cancel" },
           {
@@ -997,7 +1127,7 @@ export default function ViewTodolistScreen() {
     (category: NoteCategory) => {
       Alert.alert(
         "Delete category",
-        `Remove “${category.name}” from all notes?`,
+        `Remove â€œ${category.name}â€ from all notes?`,
         [
           { text: "Cancel", style: "cancel" },
           {
@@ -1325,31 +1455,32 @@ export default function ViewTodolistScreen() {
 
   const editTodo = (todo: Todo) => {
     router.push({
-      pathname: "/opentodolist",
+      pathname: "/cretenote",
       params: { isEditMode: "true", editTodo: JSON.stringify(todo) },
     });
   };
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const addTodo = () => {
-    Alert.alert("Create new", "What would you like to create?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Quick Note",
-        onPress: () =>
-          router.push({
-            pathname: "/opentodolist",
-            params: { quickNote: "true" },
-          }),
-      },
-      {
-        text: "Todo Task",
-        onPress: () =>
-          router.push({
-            pathname: "/opentodolist",
-            params: { quickNote: "false" },
-          }),
-      },
-    ]);
+    setShowCreateModal(true);
+  };
+
+  const createQuickNote = () => {
+    setShowCreateModal(false);
+
+    router.push({
+      pathname: "/quicknotes",
+      params: { quickNote: "true" },
+    });
+  };
+
+  const createTodoTask = () => {
+    setShowCreateModal(false);
+
+    router.push({
+      pathname: "/cretenote",
+      params: { quickNote: "false" },
+    });
   };
 
   const handleRefresh = useCallback(async () => {
@@ -1633,20 +1764,116 @@ export default function ViewTodolistScreen() {
 
     const list: SheetAction[] = [
       {
-        key: "edit",
-        label: "Edit",
-        icon: "create",
+        key: "shareText",
+        label: "Share as text",
+        icon: "document-text-outline",
         color: C.primary,
         bg: C.primarySoft,
-        onPress: () => editTodo(todo),
+        onPress: () => void shareNoteAsText(todo),
       },
+      {
+        key: "shareApps",
+        label: "Share with apps",
+        icon: "share-social-outline",
+        color: "#0F766E",
+        bg: "#D5F5EF",
+        onPress: () => void shareNoteThroughOtherApps(todo),
+      },
+      {
+        key: "security",
+        label: todo.locked ? "Unlock note" : "Lock note",
+        icon: todo.locked ? "lock-open-outline" : "lock-closed-outline",
+        color: "#7C3AED",
+        bg: "#EDE9FE",
+        onPress: () => openLockDialog(todo, todo.locked ? "unlock" : "lock"),
+      },
+      {
+        key: "edit",
+        label: "Edit",
+        icon: "create-outline",
+        color: C.primary,
+        bg: C.primarySoft,
+        onPress: () => {
+          if (todo.locked) {
+            Alert.alert("Note locked", "Unlock this note before editing it.");
+          } else {
+            editTodo(todo);
+          }
+        },
+      },
+
+      // Add or edit reminder
+      {
+        key: "addReminder",
+        label: hasReminder(todo) ? "Edit reminder" : "Add reminder",
+        icon: "alarm-outline",
+        color: C.today,
+        bg: "#E6F0FF",
+        onPress: () => openReminderEditor(todo),
+      },
+
+      // Delete reminder only when one exists
+      ...(hasReminder(todo)
+        ? [
+            {
+              key: "deleteReminder",
+              label: "Delete reminder",
+              icon: "notifications-off-outline",
+              color: C.danger,
+              bg: C.dangerSoft,
+              onPress: () => deleteReminder(todo),
+            } as SheetAction,
+            {
+              key: "snoozeReminder",
+              label: "Snooze 10 min",
+              icon: "time-outline",
+              color: "#B45309",
+              bg: "#FEF3C7",
+              onPress: () => snoozeReminder(todo),
+            } as SheetAction,
+          ]
+        : []),
+
+      // Details
+      {
+        key: "details",
+        label: "Details",
+        icon: "eye-outline",
+        color: C.sub,
+        bg: C.chip,
+        onPress: () => showDetails(todo),
+      },
+
+      // Duplicate
+      {
+        key: "duplicate",
+        label: "Duplicate",
+        icon: "copy-outline",
+        color: C.sub,
+        bg: C.chip,
+        onPress: () => void duplicateTodo(todo),
+      },
+
+      // Move to trash
+      {
+        key: "trash",
+        label: "Trash",
+        icon: "trash-outline",
+        color: C.danger,
+        bg: C.dangerSoft,
+        onPress: () => moveToTrash(todo),
+      },
+
       {
         key: "fav",
         label: meta.favorite ? "Unfavorite" : "Favorite",
         icon: meta.favorite ? "star" : "star-outline",
         color: C.amber,
         bg: "#FEF3C7",
-        onPress: () => void updateNoteMeta(todo, { favorite: !meta.favorite }),
+        onPress: () =>
+          void updateNoteMeta(todo, {
+            favorite: !meta.favorite,
+          }),
       },
       {
         key: "pin",
@@ -1671,17 +1898,6 @@ export default function ViewTodolistScreen() {
         color: C.upcoming,
         bg: "#F0E9FF",
         onPress: () => chooseCategoryForNote(todo),
-      },
-      {
-        key: "note-color",
-        label: "Note appearance",
-        icon: "color-fill-outline",
-        color: accentColor,
-        bg: "#EEF2FF",
-        onPress: () => {
-          setActionTodo(todo);
-          setAppearanceVisible(true);
-        },
       },
       {
         key: "tags",
@@ -1759,6 +1975,859 @@ export default function ViewTodolistScreen() {
     return list;
   };
 
+  const scheduleLocalReminderNotification = async (
+    todoId: string,
+    title: string,
+    scheduledAt: Date,
+  ): Promise<string> => {
+    const id = String(todoId || "").trim();
+    if (!id) throw new Error("A note ID is required to schedule a reminder.");
+    if (!(scheduledAt instanceof Date) || Number.isNaN(scheduledAt.getTime())) {
+      throw new Error("The reminder date or time is invalid.");
+    }
+    if (scheduledAt.getTime() <= Date.now()) {
+      throw new Error("Choose a reminder time in the future.");
+    }
+
+    const permission = await Notifications.getPermissionsAsync();
+    let status = permission.status;
+    if (status !== "granted") {
+      const requested = await Notifications.requestPermissionsAsync();
+      status = requested.status;
+    }
+    if (status !== "granted") {
+      throw new Error(
+        "Notification permission is disabled. Allow notifications in Android Settings and try again.",
+      );
+    }
+
+    if (Platform.OS === "android") {
+      await Notifications.setNotificationChannelAsync(REMINDER_CHANNEL_ID, {
+        name: "Reminders",
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        sound: "default",
+        enableVibrate: true,
+        enableLights: true,
+      });
+    }
+
+    // Replacing a reminder must replace its previous local notification too.
+    await cancelLocalReminderNotifications(id);
+
+    return Notifications.scheduleNotificationAsync({
+      content: {
+        title: "Reminder",
+        body: title.trim() || "You have a task to do.",
+        sound: "default",
+        data: { todoId: id, type: "todo-reminder" },
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: scheduledAt,
+        ...(Platform.OS === "android"
+          ? { channelId: REMINDER_CHANNEL_ID }
+          : {}),
+      },
+    });
+  };
+
+  const handleSnooze = useCallback(
+    async (todo: Todo, minutes: number) => {
+      const id = String(todo.tdlId || todo._id || "").trim();
+
+      if (!id || id.startsWith("local-")) {
+        Alert.alert("Cannot snooze", "Save this note to your account first.");
+        return;
+      }
+
+      try {
+        const currentToken =
+          token || (await AsyncStorage.getItem("login_token")) || "";
+
+        if (!currentToken) {
+          throw new Error("Please sign in and try again.");
+        }
+
+        const snoozedAt = new Date(Date.now() + minutes * 60 * 1000);
+        const date = formatReminderDate(snoozedAt);
+        const time = formatReminderTime(snoozedAt);
+        const alarm = snoozedAt.toLocaleTimeString([], {
+          hour: "numeric",
+          minute: "2-digit",
+        });
+
+        // Update the saved reminder on the server.
+        await axios.post(
+          `${API_BASE_URL}/api/snoozeReminder/${encodeURIComponent(id)}`,
+          {
+            reminderDate: date,
+            reminderTime: time,
+            snoozeMinutes: minutes,
+            minutes,
+          },
+          {
+            headers: {
+              Authorization: getAuthorizationHeader(currentToken),
+            },
+            timeout: 15000,
+          },
+        );
+
+        // Schedule the notification on this device.
+        let notificationFailed = false;
+
+        try {
+          await scheduleLocalReminderNotification(
+            id,
+            String(todo.title || "You have a task to do."),
+            snoozedAt,
+          );
+        } catch (notificationError: any) {
+          notificationFailed = true;
+
+          console.warn(
+            "[Reminder] Snooze notification scheduling failed:",
+            notificationError,
+          );
+        }
+
+        const updated: Todo = {
+          ...todo,
+          reminderDate: date,
+          reminderTime: time,
+          alarm,
+          updatedAt: new Date().toISOString(),
+        };
+
+        setTodos((items) =>
+          items.map((item) =>
+            getTodoKey(item) === getTodoKey(todo) ? updated : item,
+          ),
+        );
+
+        Alert.alert(
+          notificationFailed
+            ? "Reminder snoozed on account"
+            : "Reminder snoozed",
+          notificationFailed
+            ? `The reminder was moved ${minutes} minutes later on your account, but the device notification could not be scheduled. Check notification permissions and try again.`
+            : `The reminder will notify you in ${minutes} minutes.`,
+        );
+      } catch (error: any) {
+        console.error(
+          "[Reminder] Snooze failed:",
+          error?.response?.data || error?.message || error,
+        );
+
+        Alert.alert(
+          "Snooze failed",
+          error?.response?.data?.message ||
+            error?.message ||
+            "Could not snooze this reminder.",
+        );
+      }
+    },
+    [token, getTodoKey],
+  );
+
+  const snoozeReminder = useCallback(
+    (todo: Todo) => {
+      Alert.alert("Snooze reminder", "How long would you like to snooze?", [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "5 minutes",
+          onPress: () => handleSnooze(todo, 5),
+        },
+        {
+          text: "10 minutes",
+          onPress: () => handleSnooze(todo, 10),
+        },
+        {
+          text: "15 minutes",
+          onPress: () => handleSnooze(todo, 15),
+        },
+      ]);
+    },
+    [handleSnooze],
+  );
+
+  const deleteReminder = useCallback(
+    (todo: Todo) => {
+      Alert.alert(
+        "Delete reminder?",
+        `Remove the reminder for â€œ${todo.title || "Untitled note"}â€? The note itself will remain.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete reminder",
+            style: "destructive",
+            onPress: async () => {
+              const id = String(todo.tdlId || "").trim();
+              if (!id || id.startsWith("local-")) {
+                Alert.alert(
+                  "Cannot update reminder",
+                  "This note is not saved to your account yet. Open the note, clear its reminder, and save it.",
+                );
+                return;
+              }
+
+              try {
+                const currentToken =
+                  token || (await AsyncStorage.getItem("login_token")) || "";
+                if (!currentToken)
+                  throw new Error("Please sign in and try again.");
+
+                await axios.post(
+                  `${API_BASE_URL}/api/deleteReminder/${encodeURIComponent(id)}`,
+                  {},
+                  {
+                    headers: {
+                      Authorization: getAuthorizationHeader(currentToken),
+                    },
+                    timeout: 15000,
+                  },
+                );
+
+                // Cancel every pending local notification belonging to this note.
+                await cancelLocalReminderNotifications(id);
+
+                const cleared = {
+                  ...todo,
+                  alarm: null,
+                  reminderDate: null,
+                  reminderTime: null,
+                  recurring: "none",
+                  updatedAt: new Date().toISOString(),
+                };
+                setTodos((items) =>
+                  items.map((item) =>
+                    getTodoKey(item) === getTodoKey(todo) ? cleared : item,
+                  ),
+                );
+                for (const key of ["view_todolist_cache", "local_todos"]) {
+                  try {
+                    const raw = await AsyncStorage.getItem(key);
+                    if (!raw) continue;
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed)) {
+                      await AsyncStorage.setItem(
+                        key,
+                        JSON.stringify(
+                          parsed.map((item: Todo) =>
+                            getTodoKey(item) === getTodoKey(todo)
+                              ? cleared
+                              : item,
+                          ),
+                        ),
+                      );
+                    }
+                  } catch (cacheError) {
+                    console.warn(
+                      `Could not update ${key} after deleting reminder`,
+                      cacheError,
+                    );
+                  }
+                }
+                Alert.alert(
+                  "Reminder deleted",
+                  "The reminder has been removed and its pending notifications cancelled.",
+                );
+              } catch (error: any) {
+                console.error(
+                  "[Reminder] Delete failed:",
+                  error?.response?.data || error?.message || error,
+                );
+                Alert.alert(
+                  "Delete failed",
+                  error?.response?.data?.message ||
+                    error?.message ||
+                    "Could not delete this reminder.",
+                );
+              }
+            },
+          },
+        ],
+      );
+    },
+    [token, getTodoKey],
+  );
+
+  const makeReminderDateTime = (
+    dateValue: string,
+    timeValue: string,
+  ): Date | null => {
+    // Expected values: YYYY-MM-DD and HH:mm
+    const dateMatch = dateValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+    const timeMatch = timeValue.match(/^(\d{1,2}):(\d{2})$/);
+
+    if (!dateMatch || !timeMatch) {
+      console.warn("[Reminder] Invalid date/time:", {
+        dateValue,
+        timeValue,
+      });
+      return null;
+    }
+
+    const year = Number(dateMatch[1]);
+    const month = Number(dateMatch[2]);
+    const day = Number(dateMatch[3]);
+    const hour = Number(timeMatch[1]);
+    const minute = Number(timeMatch[2]);
+
+    if (
+      month < 1 ||
+      month > 12 ||
+      day < 1 ||
+      day > 31 ||
+      hour < 0 ||
+      hour > 23 ||
+      minute < 0 ||
+      minute > 59
+    ) {
+      return null;
+    }
+
+    // Construct local device time (not UTC).
+    const reminderDate = new Date(year, month - 1, day, hour, minute, 0, 0);
+
+    // Reject invalid calendar dates.
+    if (
+      reminderDate.getFullYear() !== year ||
+      reminderDate.getMonth() !== month - 1 ||
+      reminderDate.getDate() !== day
+    ) {
+      return null;
+    }
+
+    return reminderDate;
+  };
+
+  const hasReminder = (todo: Todo) =>
+    Boolean(todo.alarm || todo.reminderDate || todo.reminderTime);
+
+  // Manage only the reminder from this screen; the note itself is never edited.
+  const openReminderEditor = (todo: Todo) => {
+    const initialDate = todo.reminderDate || todo.date;
+    const parsedDate = initialDate ? new Date(initialDate) : new Date();
+    const safeDate = Number.isNaN(parsedDate.getTime())
+      ? new Date()
+      : parsedDate;
+    const rawTime = String(todo.reminderTime || todo.alarm || "");
+    const match = rawTime.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+    const nextTime = new Date();
+    if (match) {
+      let hours = Number(match[1]) % 12;
+      if ((match[3] || "").toUpperCase() === "PM") hours += 12;
+      nextTime.setHours(hours, Number(match[2]), 0, 0);
+    } else {
+      nextTime.setMinutes(nextTime.getMinutes() + 5, 0, 0);
+    }
+    setReminderTodo(todo);
+    setReminderDateValue(safeDate);
+    setReminderTimeValue(nextTime);
+    setReminderModalVisible(true);
+  };
+  const openReminderDatePicker = () => {
+    DateTimePickerAndroid.open({
+      value: reminderDateValue,
+      mode: "date",
+      minimumDate: new Date(new Date().setHours(0, 0, 0, 0)),
+      onChange: (event, selectedDate) => {
+        if (event.type === "set" && selectedDate)
+          setReminderDateValue(selectedDate);
+      },
+    });
+  };
+
+  const openReminderTimePicker = () => {
+    DateTimePickerAndroid.open({
+      value: reminderTimeValue,
+      mode: "time",
+      is24Hour: false,
+      onChange: (event, selectedTime) => {
+        if (event.type === "set" && selectedTime)
+          setReminderTimeValue(selectedTime);
+      },
+    });
+  };
+
+  const formatReminderDate = (value: Date) =>
+    `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, "0")}-${String(value.getDate()).padStart(2, "0")}`;
+  const formatReminderTime = (value: Date) =>
+    `${String(value.getHours()).padStart(2, "0")}:${String(value.getMinutes()).padStart(2, "0")}`;
+
+  const openLockDialog = useCallback(
+    (todo: Todo, mode: "lock" | "unlock" | "changePin") => {
+      // The backend security routes look up notes by `tdlId`, so do not send
+      // MongoDB `_id` as a substitute when `tdlId` is missing.
+      const id = String(todo.tdlId || "").trim();
+
+      if (!id || id.startsWith("local-")) {
+        Alert.alert(
+          "Save note first",
+          "Security locking is available for notes saved to your account. Save this note to the server first.",
+        );
+        return;
+      }
+
+      setLockTarget(todo);
+      setLockDialogMode(mode);
+      setCurrentLockPin("");
+      setNewLockPin("");
+      setConfirmLockPin("");
+      setLockDialogVisible(true);
+    },
+    [],
+  );
+
+  const submitLockDialog = useCallback(async () => {
+    if (!lockTarget || lockRequestBusy) return;
+
+    // Backend route examples use findOne({ tdlId: req.params.id }).
+    const id = String(lockTarget.tdlId || "").trim();
+
+    if (!id || id.startsWith("local-")) {
+      Alert.alert(
+        "Invalid note",
+        "This note does not have a valid server note ID. Save it to your account first.",
+      );
+      return;
+    }
+
+    const validPin = (value: string) => /^\d{4,6}$/.test(value);
+
+    if (lockDialogMode === "lock" || lockDialogMode === "changePin") {
+      if (!validPin(newLockPin)) {
+        Alert.alert("Invalid PIN", "Enter a 4â€“6 digit numeric PIN.");
+        return;
+      }
+
+      if (newLockPin !== confirmLockPin) {
+        Alert.alert("PIN mismatch", "New PIN and confirmation do not match.");
+        return;
+      }
+    }
+
+    if (lockDialogMode === "unlock" || lockDialogMode === "changePin") {
+      if (!validPin(currentLockPin)) {
+        Alert.alert("Invalid PIN", "Enter your current 4â€“6 digit PIN.");
+        return;
+      }
+    }
+
+    let endpoint: "lockNote" | "unlockNote" | "changeLockPin";
+    let body: Record<string, string>;
+
+    if (lockDialogMode === "lock") {
+      endpoint = "lockNote";
+      body = { lockPin: newLockPin };
+    } else if (lockDialogMode === "unlock") {
+      endpoint = "unlockNote";
+      body = { lockPin: currentLockPin };
+    } else {
+      endpoint = "changeLockPin";
+      body = {
+        currentPin: currentLockPin,
+        newPin: newLockPin,
+      };
+    }
+
+    setLockRequestBusy(true);
+
+    try {
+      const currentToken =
+        token || (await AsyncStorage.getItem("login_token")) || "";
+
+      if (!currentToken) {
+        Alert.alert(
+          "Sign in required",
+          "Please sign in before changing note security.",
+        );
+        return;
+      }
+
+      const requestUrl = `${API_BASE_URL}/api/${endpoint}/${encodeURIComponent(id)}`;
+
+      console.log("[Note security] Request:", endpoint, requestUrl);
+
+      const response = await axios.post(requestUrl, body, {
+        headers: {
+          Authorization: getAuthorizationHeader(currentToken),
+        },
+        timeout: 12000,
+      });
+
+      if (response.data?.success !== true) {
+        throw new Error(
+          response.data?.message || "The security update failed.",
+        );
+      }
+
+      const isLocked = lockDialogMode !== "unlock";
+
+      setTodos((previousTodos) =>
+        previousTodos.map((item) =>
+          String(item.tdlId || "").trim() === id
+            ? { ...item, locked: isLocked }
+            : item,
+        ),
+      );
+
+      // Update the local cache to avoid showing the note's content in the list
+      // while locked. This is UI/cache hygiene, not a replacement for backend
+      // authorization on note-content endpoints.
+      try {
+        const updateCache = (items: any[]) =>
+          items.map((item) => {
+            if (String(item?.tdlId || "").trim() !== id) return item;
+
+            if (isLocked) {
+              return {
+                ...item,
+                locked: true,
+                title: "Locked note",
+                text: "",
+                fileIds: [],
+                type: [],
+              };
+            }
+
+            return { ...item, locked: false };
+          });
+
+        for (const key of ["view_todolist_cache", "local_todos"]) {
+          const cacheRaw = await AsyncStorage.getItem(key);
+          if (!cacheRaw) continue;
+
+          try {
+            const cached = JSON.parse(cacheRaw);
+            if (Array.isArray(cached)) {
+              await AsyncStorage.setItem(
+                key,
+                JSON.stringify(updateCache(cached)),
+              );
+            }
+          } catch (parseError) {
+            console.warn(`Could not parse ${key}`, parseError);
+          }
+        }
+      } catch (cacheError) {
+        console.warn("Could not update note security cache", cacheError);
+      }
+
+      setLockDialogVisible(false);
+      setLockTarget(null);
+      setCurrentLockPin("");
+      setNewLockPin("");
+      setConfirmLockPin("");
+
+      const title =
+        lockDialogMode === "lock"
+          ? "Note locked"
+          : lockDialogMode === "unlock"
+            ? "Note unlocked"
+            : "PIN changed";
+
+      const message =
+        lockDialogMode === "lock"
+          ? "Your note is now locked."
+          : lockDialogMode === "unlock"
+            ? "Your note is now unlocked."
+            : "Your security PIN has been changed.";
+
+      Alert.alert(title, message);
+      await loadTodos(false);
+    } catch (error: any) {
+      const status = error?.response?.status;
+      const serverMessage = error?.response?.data?.message;
+      console.error("[Note security] Failed:", {
+        endpoint,
+        id,
+        status,
+        url: error?.config?.url,
+        response: error?.response?.data,
+        message: error?.message,
+      });
+
+      let message = serverMessage || error?.message || "Please try again.";
+
+      if (status === 404) {
+        message =
+          endpoint === "changeLockPin"
+            ? "The change-security-PIN API was not found (404). Add the backend POST /api/changeLockPin/:id route and confirm it is mounted correctly."
+            : `The ${endpoint} API returned 404. Confirm the backend route exists and that this note's tdlId matches a database record.`;
+      }
+
+      Alert.alert("Security update failed", message);
+    } finally {
+      setLockRequestBusy(false);
+    }
+  }, [
+    lockTarget,
+    lockRequestBusy,
+    lockDialogMode,
+    newLockPin,
+    confirmLockPin,
+    currentLockPin,
+    token,
+    loadTodos,
+  ]);
+
+  const getShareableNoteText = useCallback(
+    (todo: Todo, includeDetails = false) => {
+      const data = todo as Todo & Record<string, any>;
+
+      const title = String(data.title || data.name || "Untitled note").trim();
+
+      const rawDescription = data.description ?? data.desc ?? "";
+
+      const description =
+        typeof rawDescription === "string"
+          ? rawDescription.trim()
+          : String(rawDescription || "").trim();
+
+      const rawBody = data.text ?? data.content ?? data.note ?? data.body ?? "";
+
+      const body =
+        typeof rawBody === "string"
+          ? rawBody.trim()
+          : String(rawBody || "").trim();
+
+      const lines: string[] = [
+        `Title: ${title}`,
+        ...(description ? ["", `Description: ${description}`] : []),
+        ...(body ? ["", body] : []),
+      ];
+
+      if (includeDetails) {
+        lines.push("", "â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€", "ðŸ“‹ Note Details");
+
+        // Date
+        if (data.date) {
+          lines.push(`ðŸ“… Date: ${formatTodoDate(data.date)}`);
+        }
+
+        // Status
+        if (data.status) {
+          lines.push(`ðŸ“Œ Status: ${data.status}`);
+        }
+
+        // Reminder
+        const reminder = getTodoReminder(todo);
+        if (reminder) {
+          lines.push(`â° Reminder: ${reminder}`);
+        }
+
+        // Tags
+        const tags = getOrganizationMeta(todo).tags || [];
+        if (tags.length > 0) {
+          lines.push(`ðŸ·ï¸ Tags: ${tags.join(", ")}`);
+        }
+
+        // Additional fields, when available
+        if (data.category) {
+          lines.push(`ðŸ“‚ Category: ${data.category}`);
+        }
+
+        if (data.folderName || data.folder) {
+          lines.push(`ðŸ“ Folder: ${data.folderName || data.folder}`);
+        }
+
+        if (data.priority) {
+          lines.push(`âš¡ Priority: ${data.priority}`);
+        }
+
+        if (data.createdAt) {
+          lines.push(`ðŸ—“ï¸ Created: ${formatTodoDate(data.createdAt)}`);
+        }
+
+        if (data.updatedAt) {
+          lines.push(`ðŸ”„ Updated: ${formatTodoDate(data.updatedAt)}`);
+        }
+
+        if (data.completedAt) {
+          lines.push(`âœ… Completed: ${formatTodoDate(data.completedAt)}`);
+        }
+
+        lines.push("", "Shared from Notes");
+      }
+
+      return lines.join("\n").trim();
+    },
+    [getOrganizationMeta],
+  );
+
+  const toCalendarKey = useCallback((value?: string | null) => {
+    if (!value) return "";
+
+    // Preserve date-only values without timezone conversion.
+    const dateOnly = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+    if (dateOnly) {
+      return `${dateOnly[1]}-${dateOnly[2]}-${dateOnly[3]}`;
+    }
+
+    const parsed = new Date(value);
+
+    if (Number.isNaN(parsed.getTime())) return "";
+
+    return [
+      parsed.getFullYear(),
+      String(parsed.getMonth() + 1).padStart(2, "0"),
+      String(parsed.getDate()).padStart(2, "0"),
+    ].join("-");
+  }, []);
+
+  const getNoteCalendarKey = useCallback(
+    (todo: Todo) =>
+      toCalendarKey(todo.date || todo.createdAt || todo.updatedAt),
+    [toCalendarKey],
+  );
+
+  const calendarNoteCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+
+    filteredTodos.forEach((todo) => {
+      const key = getNoteCalendarKey(todo);
+      if (key) counts[key] = (counts[key] || 0) + 1;
+    });
+
+    return counts;
+  }, [filteredTodos, getNoteCalendarKey]);
+
+  // Selected calendar date filters the same list, including Quick Notes.
+  const calendarVisibleTodos = useMemo(() => {
+    if (!selectedCalendarDate) return [];
+
+    return filteredTodos.filter(
+      (todo) => getNoteCalendarKey(todo) === selectedCalendarDate,
+    );
+  }, [filteredTodos, selectedCalendarDate, getNoteCalendarKey]);
+
+  const displayedTodos = calendarView ? calendarVisibleTodos : filteredTodos;
+
+  const getTodoReminder = (todo: Todo) => {
+    // Prefer the separate reminder fields when present so the saved date and time
+    // are displayed consistently. Keep `alarm` as a backward-compatible fallback.
+    const date = todo.reminderDate ? formatTodoDate(todo.reminderDate) : "";
+
+    const time = todo.reminderTime
+      ? format12HourTime(String(todo.reminderTime))
+      : "";
+
+    if (date && time) return `${date} Â· ${time}`;
+    if (date) return date;
+    if (time) return time;
+    if (todo.alarm) return formatAlarm(todo.alarm);
+
+    return "";
+  };
+
+  const shareNoteAsText = useCallback(
+    async (todo: Todo) => {
+      if (todo.locked) {
+        Alert.alert("Note locked", "Unlock this note before sharing it.");
+        return;
+      }
+      const message = getShareableNoteText(todo, false);
+      if (!message.trim()) {
+        Alert.alert(
+          "Nothing to share",
+          "This note does not contain any text yet.",
+        );
+        return;
+      }
+      try {
+        await Share.share({
+          message,
+          title: String(todo.title || "Untitled note"),
+        });
+      } catch (error: any) {
+        Alert.alert(
+          "Share failed",
+          error?.message || "Could not share this note.",
+        );
+      }
+    },
+    [getShareableNoteText],
+  );
+
+  const shareNoteThroughOtherApps = useCallback(
+    async (todo: Todo) => {
+      if (todo.locked) {
+        Alert.alert("Note locked", "Unlock this note before sharing it.");
+        return;
+      }
+
+      const plainText = getShareableNoteText(todo, false);
+      const detailedText = getShareableNoteText(todo, true);
+      if (!plainText.trim()) {
+        Alert.alert(
+          "Nothing to share",
+          "This note does not contain any text yet.",
+        );
+        return;
+      }
+
+      // Give the user useful choices instead of making both share actions feel identical.
+      Alert.alert("Share note", "Choose how you want to share this note.", [
+        {
+          text: "Share text only",
+          onPress: () => {
+            void Share.share({
+              message: plainText,
+              title: String(todo.title || "Untitled note"),
+            }).catch((error: any) =>
+              Alert.alert(
+                "Share failed",
+                error?.message || "Could not share this note.",
+              ),
+            );
+          },
+        },
+        {
+          text: "Share with details",
+          onPress: () => {
+            void Share.share(
+              {
+                message: detailedText,
+                title: String(todo.title || "Untitled note"),
+              },
+              { dialogTitle: "Share note with details" },
+            ).catch((error: any) =>
+              Alert.alert(
+                "Share failed",
+                error?.message || "Could not open the share menu.",
+              ),
+            );
+          },
+        },
+        {
+          text: "Copy note text",
+          onPress: () => {
+            void Clipboard.setStringAsync(detailedText)
+              .then(() =>
+                Alert.alert(
+                  "Copied",
+                  "The note text and details were copied. You can paste them into any app.",
+                ),
+              )
+              .catch((error: any) =>
+                Alert.alert(
+                  "Copy failed",
+                  error?.message || "Could not copy this note.",
+                ),
+              );
+          },
+        },
+        { text: "Cancel", style: "cancel" },
+      ]);
+    },
+    [getShareableNoteText],
+  );
+
   // ==========================================================
   // RENDER: MEDIA
   // ==========================================================
@@ -1810,6 +2879,24 @@ export default function ViewTodolistScreen() {
     );
   };
 
+  const calendarCells = useMemo(() => {
+    const year = calendarMonth.getFullYear();
+    const month = calendarMonth.getMonth();
+    const firstWeekday = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const cells: Array<{ day: number | null; key: string }> = [];
+    for (let i = 0; i < firstWeekday; i++)
+      cells.push({ day: null, key: `empty-${i}` });
+    for (let day = 1; day <= daysInMonth; day++) {
+      cells.push({
+        day,
+        key: `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+      });
+    }
+    while (cells.length % 7 !== 0)
+      cells.push({ day: null, key: `end-${cells.length}` });
+    return cells;
+  }, [calendarMonth]);
   // ==========================================================
   // RENDER: CARD
   // ==========================================================
@@ -2152,7 +3239,7 @@ export default function ViewTodolistScreen() {
         <StatusBar barStyle="dark-content" backgroundColor={C.bg} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={C.primary} />
-          <Text style={styles.loadingText}>Loading your notes…</Text>
+          <Text style={styles.loadingText}>Loading your notesâ€¦</Text>
         </View>
       </SafeAreaView>
     );
@@ -2361,95 +3448,199 @@ export default function ViewTodolistScreen() {
         </View>
 
         <FlatList
-          data={regularTodos}
-          keyExtractor={(item, index) =>
-            String(item.tdlId || item._id || index)
-          }
-          renderItem={({ item }) =>
-            gridLayout ? (
-              <View style={styles.gridCell}>{renderTodo({ item })}</View>
-            ) : (
-              renderTodo({ item })
-            )
-          }
+          data={displayedTodos}
+          keyExtractor={(item, index) => String(item.tdlId || item._id || index)}
+          renderItem={({ item }) => (gridLayout ? <View style={styles.gridCell}>{renderTodo({ item })}</View> : renderTodo({ item }))}
           numColumns={gridLayout ? 2 : 1}
           key={gridLayout ? "notes-grid" : "notes-list"}
           columnWrapperStyle={gridLayout ? styles.gridRow : undefined}
           contentContainerStyle={[
             styles.listContent,
-            regularTodos.length === 0 &&
-              quickNoteTodos.length === 0 &&
-              styles.emptyListContent,
+            displayedTodos.length === 0 && quickNoteTodos.length === 0 && styles.emptyListContent,
           ]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          contentInsetAdjustmentBehavior="automatic"
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          updateCellsBatchingPeriod={40}
+          windowSize={7}
+          onEndReachedThreshold={0.35}
+          ListFooterComponent={<View style={styles.listFooterSpace} />}
           refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={handleRefresh}
-              tintColor={C.primary}
-              colors={[C.primary]}
-            />
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={accentColor} colors={[accentColor]} />
           }
           ListHeaderComponent={
             <View>
-              {/* HERO OVERVIEW */}
-              {showHero && (
-                <View style={styles.hero}>
-                  <View style={styles.heroBlobA} />
-                  <View style={styles.heroBlobB} />
-                  <View style={styles.heroTop}>
-                    <View>
-                      <Text style={styles.heroLabel}>Your workspace</Text>
-                      <View style={styles.heroNumberRow}>
-                        <Text style={styles.heroNumber}>{counts.all}</Text>
-                        <Text style={styles.heroUnit}>
-                          {counts.all === 1 ? "active item" : "active items"}
-                        </Text>
-                      </View>
-                    </View>
-                    <View style={styles.ring}>
-                      <Text style={styles.ringText}>{progress}%</Text>
-                    </View>
-                  </View>
-                  <View style={styles.progressTrack}>
-                    <View
-                      style={[
-                        styles.progressFill,
-                        { width: `${progress}%` as any },
-                      ]}
-                    />
-                  </View>
-                  <View style={styles.heroStats}>
-                    {[
-                      { label: "Today", value: counts.today, color: "#7FB0FF" },
-                      {
-                        label: "Upcoming",
-                        value: counts.upcoming,
-                        color: "#C4A8FF",
-                      },
-                      {
-                        label: "Done",
-                        value: counts.completed,
-                        color: "#6EE7D6",
-                      },
-                    ].map((s) => (
-                      <View key={s.label} style={styles.heroStat}>
-                        <View
-                          style={[
-                            styles.heroStatDot,
-                            { backgroundColor: s.color },
-                          ]}
-                        />
-                        <Text style={styles.heroStatValue}>{s.value}</Text>
-                        <Text style={styles.heroStatLabel}>{s.label}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              )}
 
-              {/* SEARCH */}
+               {/* HERO OVERVIEW */}
+
+                            {showHero && (
+  <View
+    style={[
+      styles.hero,
+      {
+        backgroundColor: "#123D32",
+        borderRadius: 24,
+        padding: 18,
+        overflow: "hidden",
+        borderWidth: 1,
+        borderColor: "#245B49",
+      },
+    ]}
+  >
+    {/* Decorative dark mint shapes */}
+    <View
+      style={[
+        styles.heroBlobA,
+        { backgroundColor: "#28785C", opacity: 0.35 },
+      ]}
+    />
+    <View
+      style={[
+        styles.heroBlobB,
+        { backgroundColor: "#36A47B", opacity: 0.22 },
+      ]}
+    />
+
+    <View style={[styles.heroTop, { alignItems: "center" }]}>
+      <View style={styles.heroInfo}>
+        <Text
+          style={[
+            styles.heroLabel,
+            { color: "#A4E8CC", letterSpacing: 1.5 },
+          ]}
+        >
+          YOUR WORKSPACE
+        </Text>
+
+        <View style={styles.heroNumberRow}>
+          <Text style={[styles.heroNumber, { color: "#F0FFF8" }]}>
+            {counts.all}
+          </Text>
+
+          <Text style={[styles.heroUnit, { color: "#B8EBD5" }]}>
+            {counts.all === 1 ? "active item" : "active items"}
+          </Text>
+        </View>
+
+        <Text style={[styles.heroSubtitle, { color: "#A5D7C1" }]}>
+          Keep moving forward, one task at a time.
+        </Text>
+      </View>
+
+      <View style={[styles.progressRing, { alignItems: "center" }]}>
+        <View
+          style={[
+            styles.ring,
+            {
+              backgroundColor: "#1B4D3F",
+              borderColor: "#55D6A0",
+              borderWidth: 4,
+            },
+          ]}
+        >
+          <Text
+            style={[
+              styles.ringText,
+              { color: "#D8FFEC", fontWeight: "800" },
+            ]}
+          >
+            {progress}%
+          </Text>
+        </View>
+
+        <Text
+          style={[
+            styles.ringCaption,
+            {
+              color: "#A4E8CC",
+              fontWeight: "700",
+              letterSpacing: 1,
+            },
+          ]}
+        >
+          COMPLETED
+        </Text>
+      </View>
+    </View>
+
+    {/* Progress bar */}
+    <View
+      style={[
+        styles.progressTrack,
+        {
+          backgroundColor: "#285B49",
+          height: 8,
+          borderRadius: 10,
+          overflow: "hidden",
+        },
+      ]}
+    >
+      <View
+        style={[
+          styles.progressFill,
+          {
+            width: `${Math.max(0, Math.min(100, progress))}%`,
+            backgroundColor: "#55D6A0",
+            borderRadius: 10,
+          },
+        ]}
+      />
+    </View>
+
+    {/* Statistics */}
+    <View style={styles.heroStats}>
+      {[
+        { label: "Today", value: counts.today },
+        { label: "Upcoming", value: counts.upcoming },
+        { label: "Done", value: counts.completed },
+      ].map((s) => (
+        <View
+          key={s.label}
+          style={[
+            styles.heroStat,
+            {
+              backgroundColor: "#19483A",
+              borderColor: "#2D6A53",
+              borderWidth: 1,
+              borderRadius: 16,
+              paddingVertical: 12,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.heroStatDot,
+              { backgroundColor: "#55D6A0" },
+            ]}
+          />
+
+          <Text
+            style={[
+              styles.heroStatValue,
+              { color: "#F0FFF8" },
+            ]}
+          >
+            {s.value}
+          </Text>
+
+          <Text
+            style={[
+              styles.heroStatLabel,
+              { color: "#A4D9C2" },
+            ]}
+          >
+            {s.label}
+          </Text>
+        </View>
+      ))}
+    </View>
+  </View>
+                             )}
+
+               {/* SEARCH */}
+
               <View style={styles.searchContainer}>
                 <Ionicons name="search" size={18} color={C.mute} />
                 <TextInput
@@ -2467,12 +3658,121 @@ export default function ViewTodolistScreen() {
                 )}
               </View>
 
+              {/* CALENDAR VIEW TOGGLE */}
+              <View style={styles.viewSwitcher}>
+  <Pressable
+    onPress={() => setCalendarView(false)}
+    style={[
+      styles.viewSwitcherOption,
+      !calendarView && styles.viewSwitcherActive,
+    ]}
+    accessibilityRole="button"
+    accessibilityLabel="List view"
+    accessibilityState={{ selected: !calendarView }}
+  >
+    <Ionicons
+      name="list-outline"
+      size={16}
+      color={!calendarView ? "#FFFFFF" : C.primary}
+    />
+    <Text
+      style={[
+        styles.viewSwitcherText,
+        !calendarView && styles.viewSwitcherActiveText,
+      ]}
+    >
+      List
+    </Text>
+  </Pressable>
+
+  <Pressable
+    onPress={() => setCalendarView(true)}
+    style={[
+      styles.viewSwitcherOption,
+      calendarView && styles.viewSwitcherActive,
+    ]}
+    accessibilityRole="button"
+    accessibilityLabel="Calendar view"
+    accessibilityState={{ selected: calendarView }}
+  >
+    <Ionicons
+      name="calendar-outline"
+      size={16}
+      color={calendarView ? "#FFFFFF" : C.primary}
+    />
+    <Text
+      style={[
+        styles.viewSwitcherText,
+        calendarView && styles.viewSwitcherActiveText,
+      ]}
+    >
+      Calendar
+    </Text>
+  </Pressable>
+</View>
+
+              {calendarView && (
+                <View style={styles.calendarPanel}>
+                  <View style={styles.calendarHeader}>
+                    <Pressable style={styles.calendarArrow} onPress={() => setCalendarMonth((month) => new Date(month.getFullYear(), month.getMonth() - 1, 1))} accessibilityLabel="Previous month">
+                      <Ionicons name="chevron-back" size={19} color={C.ink} />
+                    </Pressable>
+                    <Pressable onPress={() => {
+                      const now = new Date();
+                      setCalendarMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+                      setSelectedCalendarDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`);
+                    }}>
+                      <Text style={styles.calendarMonthTitle}>{calendarMonth.toLocaleDateString("en-IN", { month: "long", year: "numeric" })}</Text>
+                    </Pressable>
+                    <Pressable style={styles.calendarArrow} onPress={() => setCalendarMonth((month) => new Date(month.getFullYear(), month.getMonth() + 1, 1))} accessibilityLabel="Next month">
+                      <Ionicons name="chevron-forward" size={19} color={C.ink} />
+                    </Pressable>
+                  </View>
+                  <View style={styles.calendarWeekRow}>
+                    {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => <Text key={day} style={styles.calendarWeekday}>{day}</Text>)}
+                  </View>
+                  <View style={styles.calendarGrid}>
+                    {calendarCells.map((cell) => {
+                      if (!cell.day) return <View key={cell.key} style={styles.calendarDayCell} />;
+                      const active = selectedCalendarDate === cell.key;
+                      const hasNotes = (calendarNoteCounts[cell.key] || 0) > 0;
+                      const now = new Date();
+                      const isToday = cell.key === `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+                      return (
+                        <Pressable key={cell.key} style={[styles.calendarDayCell, active && { backgroundColor: accentColor }, !active && isToday && styles.calendarTodayCell]} onPress={() => setSelectedCalendarDate(cell.key)} accessibilityRole="button" accessibilityLabel={`${cell.day}, ${calendarMonth.toLocaleDateString("en-IN", { month: "long" })}${hasNotes ? `, ${calendarNoteCounts[cell.key]} notes` : ""}`}>
+                          <Text style={[styles.calendarDayText, active && { color: "#FFFFFF" }, !active && isToday && { color: C.primary, fontWeight: "800" }]}>{cell.day}</Text>
+                          {hasNotes && <View style={[styles.calendarNoteDot, active && { backgroundColor: "#FFFFFF" }]} />}
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                  <View style={styles.calendarSelectedSummary}>
+                    <View>
+                      <Text style={styles.calendarSelectedTitle}>{new Date(`${selectedCalendarDate}T12:00:00`).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "short" })}</Text>
+                      <Text style={styles.calendarSelectedSubtitle}>{calendarVisibleTodos.length} {calendarVisibleTodos.length === 1 ? "note" : "notes"} on this date</Text>
+                    </View>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <Pressable
+                        onPress={() => router.push({ pathname: "/cretenote", params: { quickNote: "false", selectedDate: selectedCalendarDate } })}
+                        style={[styles.calendarTodayButton, { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: accentColor }]}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Create a note for ${selectedCalendarDate}`}
+                      >
+                        <Ionicons name="add-circle-outline" size={14} color="#FFFFFF" />
+                        <Text style={[styles.calendarTodayButtonText, { color: "#FFFFFF" }]}>Link note</Text>
+                      </Pressable>
+                      <Pressable onPress={() => {
+                        const now = new Date();
+                        setCalendarMonth(new Date(now.getFullYear(), now.getMonth(), 1));
+                        setSelectedCalendarDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`);
+                      }} style={styles.calendarTodayButton}><Text style={styles.calendarTodayButtonText}>Today</Text></Pressable>
+                    </View>
+                  </View>
+                </View>
+              )}
+
               {/* STATUS FILTERS */}
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.chipScroll}
-              >
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipScroll}>
                 {(
                   [
                     ["All", counts.all],
@@ -2483,39 +3783,10 @@ export default function ViewTodolistScreen() {
                 ).map(([name, count]) => {
                   const active = filter === name;
                   return (
-                    <Pressable
-                      key={name}
-                      style={[
-                        styles.filterChip,
-                        active && {
-                          backgroundColor: accentColor,
-                          borderColor: accentColor,
-                        },
-                      ]}
-                      onPress={() => setFilter(name)}
-                    >
-                      <Text
-                        style={[
-                          styles.filterText,
-                          active && styles.filterTextActive,
-                        ]}
-                      >
-                        {name}
-                      </Text>
-                      <View
-                        style={[
-                          styles.filterCount,
-                          active && styles.filterCountActive,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.filterCountText,
-                            active && styles.filterCountTextActive,
-                          ]}
-                        >
-                          {count}
-                        </Text>
+                    <Pressable key={name} style={[styles.filterChip, active && { backgroundColor: accentColor, borderColor: accentColor }]} onPress={() => setFilter(name)}>
+                      <Text style={[styles.filterText, active && styles.filterTextActive]}>{name}</Text>
+                      <View style={[styles.filterCount, active && styles.filterCountActive]}>
+                        <Text style={[styles.filterCountText, active && styles.filterCountTextActive]}>{count}</Text>
                       </View>
                     </Pressable>
                   );
@@ -2523,195 +3794,81 @@ export default function ViewTodolistScreen() {
               </ScrollView>
 
               {/* TOOLS: sort, layout, active collection, folders, categories */}
-              {showCategories && (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={[styles.chipScroll, { paddingTop: 0 }]}
-                >
-                  <Pressable style={styles.toolChip} onPress={cycleSort}>
-                    <Ionicons
-                      name="swap-vertical"
-                      size={14}
-                      color={C.primary}
-                    />
-                    <Text style={styles.toolChipText}>{sortLabel}</Text>
-                  </Pressable>
-                  <Pressable
-                    style={styles.toolChip}
-                    onPress={() => setGridLayout((v) => !v)}
-                  >
-                    <Ionicons
-                      name={gridLayout ? "list" : "grid"}
-                      size={14}
-                      color={C.primary}
-                    />
-                    <Text style={styles.toolChipText}>
-                      {gridLayout ? "List" : "Grid"}
-                    </Text>
-                  </Pressable>
+              {showCategories && <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[styles.chipScroll, { paddingTop: 0 }]}>
+                <Pressable style={styles.toolChip} onPress={cycleSort}>
+                  <Ionicons name="swap-vertical" size={14} color={C.primary} />
+                  <Text style={styles.toolChipText}>{sortLabel}</Text>
+                </Pressable>
+                <Pressable style={styles.toolChip} onPress={() => setGridLayout((v) => !v)}>
+                  <Ionicons name={gridLayout ? "list" : "grid"} size={14} color={C.primary} />
+                  <Text style={styles.toolChipText}>{gridLayout ? "List" : "Grid"}</Text>
+                </Pressable>
 
-                  {collectionLabel && (
+                {collectionLabel && (
+                  <Pressable style={[styles.toolChip, styles.toolChipActive]} onPress={() => setCollectionFilter("all")}>
+                    <Text style={[styles.toolChipText, { color: "#FFFFFF" }]}>{collectionLabel}</Text>
+                    <Ionicons name="close" size={14} color="#FFFFFF" />
+                  </Pressable>
+                )}
+
+                {noteFolders
+                  .filter((f) => f.id !== collectionFilter)
+                  .map((folder) => (
                     <Pressable
-                      style={[styles.toolChip, styles.toolChipActive]}
-                      onPress={() => setCollectionFilter("all")}
+                      key={folder.id}
+                      style={styles.toolChip}
+                      onPress={() => setCollectionFilter(folder.id)}
+                      onLongPress={() =>
+                        Alert.alert(folder.name, "Manage this folder", [
+                          { text: "Rename", onPress: () => openOrganizationEditor("folder", folder.id) },
+                          { text: "Delete", style: "destructive", onPress: () => deleteFolder(folder) },
+                          { text: "Cancel", style: "cancel" },
+                        ])
+                      }
                     >
-                      <Text style={[styles.toolChipText, { color: "#FFFFFF" }]}>
-                        {collectionLabel}
-                      </Text>
-                      <Ionicons name="close" size={14} color="#FFFFFF" />
+                      <Ionicons name="folder" size={13} color={C.sub} />
+                      <Text style={styles.toolChipText}>{folder.name}</Text>
                     </Pressable>
-                  )}
+                  ))}
 
-                  {noteFolders
-                    .filter((f) => f.id !== collectionFilter)
-                    .map((folder) => (
-                      <Pressable
-                        key={folder.id}
-                        style={styles.toolChip}
-                        onPress={() => setCollectionFilter(folder.id)}
-                        onLongPress={() =>
-                          Alert.alert(folder.name, "Manage this folder", [
-                            {
-                              text: "Rename",
-                              onPress: () =>
-                                openOrganizationEditor("folder", folder.id),
-                            },
-                            {
-                              text: "Delete",
-                              style: "destructive",
-                              onPress: () => deleteFolder(folder),
-                            },
-                            { text: "Cancel", style: "cancel" },
-                          ])
-                        }
-                      >
-                        <Ionicons name="folder" size={13} color={C.sub} />
-                        <Text style={styles.toolChipText}>{folder.name}</Text>
-                      </Pressable>
-                    ))}
-
-                  {noteCategories.map((category) => {
-                    const active = categoryFilter === category.id;
-                    return (
-                      <Pressable
-                        key={category.id}
-                        style={[
-                          styles.toolChip,
-                          {
-                            backgroundColor: category.color,
-                            borderColor: active ? C.ink : category.color,
-                          },
-                        ]}
-                        onPress={() =>
-                          setCategoryFilter(active ? "all" : category.id)
-                        }
-                        onLongPress={() =>
-                          Alert.alert(category.name, "Manage this category", [
-                            {
-                              text: "Edit / recolor",
-                              onPress: () =>
-                                openOrganizationEditor("category", category.id),
-                            },
-                            {
-                              text: "Delete",
-                              style: "destructive",
-                              onPress: () => deleteCategory(category),
-                            },
-                            { text: "Cancel", style: "cancel" },
-                          ])
-                        }
-                      >
-                        <Text style={[styles.toolChipText, { color: C.ink }]}>
-                          {category.name}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </ScrollView>
-              )}
+                {noteCategories.map((category) => {
+                  const active = categoryFilter === category.id;
+                  return (
+                    <Pressable
+                      key={category.id}
+                      style={[styles.toolChip, { backgroundColor: category.color, borderColor: active ? C.ink : category.color }]}
+                      onPress={() => setCategoryFilter(active ? "all" : category.id)}
+                      onLongPress={() =>
+                        Alert.alert(category.name, "Manage this category", [
+                          { text: "Edit / recolor", onPress: () => openOrganizationEditor("category", category.id) },
+                          { text: "Delete", style: "destructive", onPress: () => deleteCategory(category) },
+                          { text: "Cancel", style: "cancel" },
+                        ])
+                      }
+                    >
+                      <Text style={[styles.toolChipText, { color: C.ink }]}>{category.name}</Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>}
 
               {/* QUICK NOTES */}
-
-              {showQuickNotes && (
+              {showQuickNotes && quickNoteTodos.length > 0 && (
                 <View style={{ marginTop: 6 }}>
-                  {sectionHeader(
-                    "flash",
-                    C.amber,
-                    "Quick notes",
-                    quickNoteTodos.length,
-                  )}
-
-                  {quickNoteTodos.length > 0 ? (
-                    quickNoteTodos.map((item, index) => (
-                      <View
-                        key={String(
-                          item.tdlId ||
-                            item._id ||
-                            item.id ||
-                            `quick-note-${index}`,
-                        )}
-                      >
-                        {renderTodo({ item })}
-                      </View>
-                    ))
-                  ) : (
-                    <View
-                      style={{
-                        paddingVertical: 20,
-                        paddingHorizontal: 16,
-                        alignItems: "center",
-                        borderRadius: 12,
-                        marginTop: 8,
-                        backgroundColor: C.card,
-                      }}
-                    >
-                      <Ionicons
-                        name="flash-outline"
-                        size={28}
-                        color={C.amber}
-                      />
-
-                      <Text
-                        style={{
-                          marginTop: 8,
-                          fontSize: 14,
-                          fontWeight: "600",
-                          color: C.text,
-                        }}
-                      >
-                        No quick notes found
-                      </Text>
-
-                      <Text
-                        style={{
-                          marginTop: 4,
-                          fontSize: 12,
-                          color: C.secondaryText,
-                          textAlign: "center",
-                        }}
-                      >
-                        Create a quick note or check whether its metadata was
-                        saved.
-                      </Text>
-                    </View>
-                  )}
+                  {sectionHeader("flash", C.amber, "Quick notes", quickNoteTodos.length)}
+                  {quickNoteTodos.map((item, index) => (
+                    <View key={String(item.tdlId || item._id || `quick-note-${index}`)}>{renderTodo({ item })}</View>
+                  ))}
                 </View>
               )}
 
               {(regularTodos.length > 0 || quickNoteTodos.length > 0) &&
-                sectionHeader(
-                  "checkbox",
-                  C.primary,
-                  "Todos",
-                  regularTodos.length,
-                )}
+                sectionHeader("checkbox", C.primary, "Todos", regularTodos.length)}
             </View>
           }
-          ListEmptyComponent={
-            quickNoteTodos.length === 0 ? renderEmpty() : null
-          }
+          ListEmptyComponent={quickNoteTodos.length === 0 ? renderEmpty() : null}
         />
+
 
         {/* FAB */}
         <Pressable
@@ -2887,6 +4044,255 @@ export default function ViewTodolistScreen() {
         </View>
       </Modal>
 
+      <Modal
+        transparent
+        visible={reminderModalVisible}
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => !reminderBusy && setReminderModalVisible(false)}
+      >
+        <View style={styles.dialogOverlay}>
+          <View style={styles.reminderDialog}>
+            <View style={styles.reminderDialogHeader}>
+              <View style={styles.reminderHeaderIcon}>
+                <Ionicons name="alarm-outline" size={24} color={C.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.dialogTitle}>
+                  {reminderTodo && hasReminder(reminderTodo)
+                    ? "Edit reminder"
+                    : "Add reminder"}
+                </Text>
+                <Text style={styles.reminderSubtitle} numberOfLines={2}>
+                  {reminderTodo?.title || "Untitled note"}
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => !reminderBusy && setReminderModalVisible(false)}
+                style={styles.reminderClose}
+              >
+                <Ionicons name="close" size={20} color={C.sub} />
+              </Pressable>
+            </View>
+            <Text style={styles.reminderHint}>
+              Only the reminder will change. Your note content stays untouched.
+            </Text>
+            <Text style={styles.reminderFieldLabel}>REMINDER DATE</Text>
+            <Pressable
+              style={styles.reminderPickerRow}
+              onPress={openReminderDatePicker}
+            >
+              <View style={styles.reminderPickerIcon}>
+                <Ionicons name="calendar-outline" size={20} color={C.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.reminderPickerCaption}>Date</Text>
+                <Text style={styles.reminderPickerValue}>
+                  {reminderDateValue.toLocaleDateString([], {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={C.mute} />
+            </Pressable>
+            <Text style={styles.reminderFieldLabel}>REMINDER TIME</Text>
+            <Pressable
+              style={styles.reminderPickerRow}
+              onPress={openReminderTimePicker}
+            >
+              <View style={styles.reminderPickerIcon}>
+                <Ionicons name="time-outline" size={20} color={C.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.reminderPickerCaption}>Time</Text>
+                <Text style={styles.reminderPickerValue}>
+                  {reminderTimeValue.toLocaleTimeString([], {
+                    hour: "numeric",
+                    minute: "2-digit",
+                  })}
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={C.mute} />
+            </Pressable>
+            <View style={styles.reminderButtonRow}>
+              <Pressable
+                style={styles.reminderCancelButton}
+                disabled={reminderBusy}
+                onPress={() => setReminderModalVisible(false)}
+              >
+                <Text style={styles.reminderCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.reminderSaveButton,
+                  reminderBusy && { opacity: 0.65 },
+                ]}
+                disabled={reminderBusy}
+                onPress={() => void saveReminderFromView()}
+              >
+                {reminderBusy ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Ionicons
+                      name="checkmark-circle-outline"
+                      size={18}
+                      color="#FFFFFF"
+                    />
+                    <Text style={styles.reminderSaveText}>Save reminder</Text>
+                  </>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ======================= LOCK / UNLOCK / CHANGE PIN ======================= */}
+      <Modal
+        transparent
+        visible={lockDialogVisible}
+        animationType="fade"
+        onRequestClose={() => !lockRequestBusy && setLockDialogVisible(false)}
+        statusBarTranslucent
+      >
+        <View style={styles.dialogOverlay}>
+          <View style={styles.dialog}>
+            <View style={{ alignItems: "center", marginBottom: 14 }}>
+              <View
+                style={{
+                  width: 58,
+                  height: 58,
+                  borderRadius: 20,
+                  backgroundColor: "#EDE9FE",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginBottom: 10,
+                }}
+              >
+                <Ionicons
+                  name={
+                    lockDialogMode === "unlock"
+                      ? "lock-open"
+                      : lockDialogMode === "changePin"
+                        ? "key"
+                        : "lock-closed"
+                  }
+                  size={27}
+                  color="#7C3AED"
+                />
+              </View>
+              <Text
+                style={[
+                  styles.dialogTitle,
+                  { marginBottom: 4, textAlign: "center" },
+                ]}
+              >
+                {lockDialogMode === "lock"
+                  ? "Lock note"
+                  : lockDialogMode === "unlock"
+                    ? "Unlock note"
+                    : "Change security PIN"}
+              </Text>
+              <Text
+                style={{
+                  color: C.sub,
+                  fontSize: 13,
+                  textAlign: "center",
+                  lineHeight: 19,
+                }}
+              >
+                {lockDialogMode === "lock"
+                  ? "Create a 4â€“6 digit PIN to protect this note."
+                  : lockDialogMode === "unlock"
+                    ? "Enter the PIN to unlock this note."
+                    : "Verify your current PIN, then create a new one."}
+              </Text>
+            </View>
+            {(lockDialogMode === "unlock" ||
+              lockDialogMode === "changePin") && (
+              <TextInput
+                value={currentLockPin}
+                onChangeText={(v) =>
+                  setCurrentLockPin(v.replace(/\D/g, "").slice(0, 6))
+                }
+                placeholder="Current PIN"
+                placeholderTextColor={C.mute}
+                keyboardType="number-pad"
+                secureTextEntry
+                maxLength={6}
+                style={[styles.dialogInput, { marginBottom: 10 }]}
+                editable={!lockRequestBusy}
+              />
+            )}
+            {lockDialogMode !== "unlock" && (
+              <>
+                <TextInput
+                  value={newLockPin}
+                  onChangeText={(v) =>
+                    setNewLockPin(v.replace(/\D/g, "").slice(0, 6))
+                  }
+                  placeholder="New PIN (4â€“6 digits)"
+                  placeholderTextColor={C.mute}
+                  keyboardType="number-pad"
+                  secureTextEntry
+                  maxLength={6}
+                  style={[styles.dialogInput, { marginBottom: 10 }]}
+                  editable={!lockRequestBusy}
+                />
+                <TextInput
+                  value={confirmLockPin}
+                  onChangeText={(v) =>
+                    setConfirmLockPin(v.replace(/\D/g, "").slice(0, 6))
+                  }
+                  placeholder="Confirm new PIN"
+                  placeholderTextColor={C.mute}
+                  keyboardType="number-pad"
+                  secureTextEntry
+                  maxLength={6}
+                  style={styles.dialogInput}
+                  editable={!lockRequestBusy}
+                />
+              </>
+            )}
+            <View style={styles.dialogActions}>
+              <Pressable
+                style={styles.dialogCancel}
+                disabled={lockRequestBusy}
+                onPress={() => setLockDialogVisible(false)}
+              >
+                <Text style={styles.dialogCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.dialogSave,
+                  {
+                    backgroundColor: "#7C3AED",
+                    opacity: lockRequestBusy ? 0.7 : 1,
+                  },
+                ]}
+                disabled={lockRequestBusy}
+                onPress={() => void submitLockDialog()}
+              >
+                {lockRequestBusy ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.dialogSaveText}>
+                    {lockDialogMode === "lock"
+                      ? "Lock note"
+                      : lockDialogMode === "unlock"
+                        ? "Unlock"
+                        : "Update PIN"}
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
       {/* ======================= FOLDER / CATEGORY / TAG EDITOR ======================= */}
       <Modal
         transparent
@@ -3179,7 +4585,7 @@ export default function ViewTodolistScreen() {
                       { color: accentColor },
                     ]}
                   >
-                    Apply selected color to “{actionTodo.title || "this note"}”
+                    Apply selected color to â€œ{actionTodo.title || "this note"}â€
                   </Text>
                 </Pressable>
               )}
@@ -3511,6 +4917,167 @@ export default function ViewTodolistScreen() {
                     <Text style={styles.detailsInfoValue}>{item.value}</Text>
                   </View>
                 </View>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showCreateModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCreateModal(false)}
+      >
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.4)",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 20,
+          }}
+        >
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 420,
+              backgroundColor: C.surface,
+              borderRadius: 18,
+              padding: 24,
+            }}
+          >
+            <Text
+              style={{
+                fontSize: 22,
+                fontWeight: "700",
+                color: C.ink,
+                marginBottom: 8,
+              }}
+            >
+              Create new
+            </Text>
+
+            <Text
+              style={{
+                fontSize: 14,
+                color: C.ink,
+                opacity: 0.7,
+                marginBottom: 22,
+              }}
+            >
+              What would you like to create?
+            </Text>
+
+            <Pressable
+              onPress={createQuickNote}
+              style={{
+                padding: 16,
+                borderRadius: 12,
+                backgroundColor: "#E4F5ED",
+                marginBottom: 12,
+              }}
+            >
+              <Text
+                style={{ fontSize: 16, fontWeight: "600", color: "#236B50" }}
+              >
+                ðŸ“ Quick Note
+              </Text>
+              <Text style={{ fontSize: 13, color: "#236B50", marginTop: 4 }}>
+                Quickly capture your thoughts
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={createTodoTask}
+              style={{
+                padding: 16,
+                borderRadius: 12,
+                backgroundColor: "#E4F5ED",
+                marginBottom: 18,
+              }}
+            >
+              <Text
+                style={{ fontSize: 16, fontWeight: "600", color: "#236B50" }}
+              >
+                âœ“ Todo Task
+              </Text>
+              <Text style={{ fontSize: 13, color: "#236B50", marginTop: 4 }}>
+                Create a task with details
+              </Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => setShowCreateModal(false)}
+              style={{ padding: 12, alignItems: "center" }}
+            >
+              <Text style={{ fontSize: 15, fontWeight: "600", color: C.ink }}>
+                Cancel
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={optionPicker !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setOptionPicker(null)}
+      >
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 24,
+            backgroundColor: "rgba(0,0,0,0.4)",
+          }}
+        >
+          <View
+            style={{
+              width: "100%",
+              maxWidth: 400,
+              maxHeight: "80%",
+              backgroundColor: "#FFFFFF",
+              borderRadius: 18,
+              padding: 20,
+            }}
+          >
+            <Text style={{ fontSize: 20, fontWeight: "700", color: "#18352B" }}>
+              {optionPicker?.title}
+            </Text>
+
+            <Text style={{ marginTop: 8, marginBottom: 16, color: "#64796F" }}>
+              {optionPicker?.message}
+            </Text>
+
+            <ScrollView>
+              {optionPicker?.options.map((option, index) => (
+                <Pressable
+                  key={`${option.text}-${index}`}
+                  onPress={() => {
+                    setOptionPicker(null);
+                    option.onPress?.();
+                  }}
+                  style={{
+                    padding: 14,
+                    borderRadius: 10,
+                    marginBottom: 6,
+                    backgroundColor:
+                      option.style === "destructive" ? "#FCE8E8" : "#E8F3EC",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color:
+                        option.style === "destructive" ? "#D94848" : "#18352B",
+                      fontWeight: "600",
+                    }}
+                  >
+                    {option.text}
+                  </Text>
+                </Pressable>
               ))}
             </ScrollView>
           </View>
@@ -4179,7 +5746,7 @@ const styles = StyleSheet.create({
   },
 
   notePatternOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     borderRadius: 14,
     overflow: "hidden",
   },
@@ -4204,7 +5771,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(99, 102, 241, 0.38)",
   },
   notePatternGrid: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
   notePatternGridVertical: {
     position: "absolute",
@@ -4265,7 +5832,7 @@ const styles = StyleSheet.create({
   },
 
   patternGrid: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     flexDirection: "row",
     justifyContent: "space-evenly",
   },
@@ -4364,6 +5931,141 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 
+  // Editor dialog
+  reminderDialog: {
+    width: "100%",
+    maxWidth: 440,
+    borderRadius: 26,
+    backgroundColor: "#FFFFFF",
+    padding: 22,
+    borderWidth: 1,
+    borderColor: C.line,
+    shadowColor: "#064E3B",
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 12,
+  },
+  reminderDialogHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
+  reminderHeaderIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: C.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  reminderSubtitle: {
+    color: C.sub,
+    fontSize: 13,
+    fontWeight: "600",
+    marginTop: -8,
+  },
+  reminderClose: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    backgroundColor: C.bg,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  reminderHint: {
+    marginTop: 14,
+    marginBottom: 18,
+    color: C.sub,
+    fontSize: 12.5,
+    lineHeight: 18,
+    backgroundColor: C.bg,
+    padding: 11,
+    borderRadius: 12,
+  },
+  reminderFieldLabel: {
+    fontSize: 10,
+    letterSpacing: 1.2,
+    fontWeight: "900",
+    color: C.sub,
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  reminderPickerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 13,
+    borderWidth: 1,
+    borderColor: C.line,
+    borderRadius: 16,
+    marginBottom: 14,
+    backgroundColor: "#FCFFFD",
+  },
+  reminderPickerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 13,
+    backgroundColor: C.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  reminderPickerCaption: {
+    color: C.sub,
+    fontSize: 11,
+    fontWeight: "700",
+    marginBottom: 3,
+  },
+  reminderPickerValue: { color: C.ink, fontSize: 14, fontWeight: "800" },
+  reminderButtonRow: { flexDirection: "row", gap: 10, marginTop: 8 },
+  reminderCancelButton: {
+    height: 48,
+    paddingHorizontal: 18,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: C.line,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  reminderCancelText: { color: C.sub, fontWeight: "800", fontSize: 14 },
+  reminderSaveButton: {
+    flex: 1,
+    height: 48,
+    borderRadius: 15,
+    backgroundColor: C.primary,
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  reminderSaveText: { color: "#FFFFFF", fontWeight: "900", fontSize: 14 },
+  dialogOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(18,20,43,0.5)",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 24,
+  },
+  dialog: {
+    width: "100%",
+    maxWidth: 400,
+    backgroundColor: C.surface,
+    borderRadius: 28,
+    padding: 22,
+  },
+  dialogTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    letterSpacing: -0.4,
+    color: C.ink,
+    marginBottom: 14,
+  },
+  dialogInput: {
+    height: 50,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    fontSize: 15,
+    color: COLORS.ink,
+    backgroundColor: COLORS.bg,
+    borderWidth: 1,
+    borderColor: COLORS.line,
+  },
   appearanceSmallOption: {
     flexGrow: 1,
     flexBasis: "21%",
@@ -4507,37 +6209,7 @@ const styles = StyleSheet.create({
   },
 
   // Editor dialog
-  dialogOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(18,20,43,0.5)",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-  },
-  dialog: {
-    width: "100%",
-    maxWidth: 400,
-    backgroundColor: C.surface,
-    borderRadius: 28,
-    padding: 22,
-  },
-  dialogTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    letterSpacing: -0.4,
-    color: C.ink,
-    marginBottom: 14,
-  },
-  dialogInput: {
-    height: 50,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    fontSize: 15,
-    color: COLORS.ink,
-    backgroundColor: COLORS.bg,
-    borderWidth: 1,
-    borderColor: COLORS.line,
-  },
+
   tagList: { marginTop: 12, maxHeight: 190 },
   tagRow: {
     flexDirection: "row",
@@ -4595,4 +6267,128 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   dialogSaveText: { fontSize: 14, fontWeight: "800", color: "#FFFFFF" },
+
+  viewSwitcher: {
+    flexDirection: "row",
+    alignSelf: "flex-end",
+    alignItems: "center",
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 6,
+    padding: 3,
+    borderRadius: 12,
+    backgroundColor: "#EEF4F0",
+    borderWidth: 1,
+    borderColor: "#DDE8E0",
+  },
+
+  viewSwitcherOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 5,
+    paddingHorizontal: 12,
+    minHeight: 32,
+    borderRadius: 9,
+  },
+
+  viewSwitcherActive: {
+    backgroundColor: "#319B70",
+  },
+
+  viewSwitcherText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: C.primary,
+  },
+
+  viewSwitcherActiveText: {
+    color: "#FFFFFF",
+  },
+
+  calendarViewToggle: {
+    minHeight: 44,
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+    paddingHorizontal: 13,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: C.line,
+    backgroundColor: "#FFFFFF",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 9,
+  },
+  calendarViewToggleText: { color: C.ink, fontSize: 13, fontWeight: "700" },
+  calendarPanel: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 10,
+    padding: 14,
+    borderRadius: 20,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: C.line,
+  },
+  calendarHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  calendarArrow: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#EAFBF4",
+  },
+  calendarMonthTitle: { color: C.ink, fontSize: 16, fontWeight: "800" },
+  calendarWeekRow: { flexDirection: "row", marginBottom: 5 },
+  calendarWeekday: {
+    width: "14.2857%",
+    textAlign: "center",
+    color: C.sub,
+    fontSize: 11,
+    fontWeight: "700",
+    paddingVertical: 7,
+  },
+  calendarGrid: { flexDirection: "row", flexWrap: "wrap" },
+  calendarDayCell: {
+    width: "14.2857%",
+    height: 42,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+    marginBottom: 2,
+  },
+  calendarDayText: { color: C.ink, fontSize: 13, fontWeight: "600" },
+  calendarTodayCell: { borderWidth: 1, borderColor: C.primary },
+  calendarNoteDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: C.primary,
+    marginTop: 2,
+  },
+  calendarSelectedSummary: {
+    borderTopWidth: 1,
+    borderTopColor: C.line,
+    paddingTop: 12,
+    marginTop: 7,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  calendarSelectedTitle: { color: C.ink, fontSize: 13, fontWeight: "800" },
+  calendarSelectedSubtitle: { color: C.sub, fontSize: 11, marginTop: 3 },
+  calendarTodayButton: {
+    backgroundColor: "#D1FAE5",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  calendarTodayButtonText: { color: C.ink, fontWeight: "800", fontSize: 12 },
 });
