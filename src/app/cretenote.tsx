@@ -197,7 +197,20 @@ const parseDateText = (value: string): Date | null => {
   date.setHours(0, 0, 0, 0);
   return date;
 };
+const showAppAlert = (title: string, message: string, onOk?: () => void) => {
+  if (Platform.OS === "web") {
+    window.alert(`${title}\n\n${message}`);
+    onOk?.();
+    return;
+  }
 
+  Alert.alert(title, message, [
+    {
+      text: "OK",
+      onPress: onOk,
+    },
+  ]);
+};
 const formatLongDate = (dateText: string) => {
   const date = parseDateText(dateText);
   if (!date) return "Choose due date";
@@ -2595,18 +2608,19 @@ export default function TodolistScreen() {
   const saveTodo = useCallback(async () => {
     if (savingRef.current) return;
 
+    // 1. Validate inputs
     if (!title.trim()) {
-      Alert.alert("Title required", "Please enter a Todo title.");
+      showAppAlert("Title required", "Please enter a Todo title.");
       return;
     }
 
     if (!token || !userId) {
-      Alert.alert("Login required", "Please sign in before saving this Todo.");
+      showAppAlert("Login required", "Please sign in before saving this Todo.");
       return;
     }
 
     if (!parseDateText(dateText) || Number.isNaN(dueDateTime.getTime())) {
-      Alert.alert(
+      showAppAlert(
         "Invalid due date",
         "Please select a valid due date and time.",
       );
@@ -2614,7 +2628,7 @@ export default function TodolistScreen() {
     }
 
     if (isRecording || recordingRef.current) {
-      Alert.alert(
+      showAppAlert(
         "Recording in progress",
         "Stop the voice recording before saving.",
       );
@@ -2622,7 +2636,7 @@ export default function TodolistScreen() {
     }
 
     if (alarmDate && alarmDate.getTime() <= Date.now()) {
-      Alert.alert("Invalid reminder", "Choose a reminder time in the future.");
+      showAppAlert("Invalid reminder", "Choose a reminder time in the future.");
       return;
     }
 
@@ -2630,12 +2644,15 @@ export default function TodolistScreen() {
     setLoading(true);
 
     try {
+      console.log("[Todo] Starting save...");
+
       const nowIso = new Date().toISOString();
       setModifiedAt(nowIso);
 
       const formData = buildFormData(nowIso);
 
       const apiTodoId = todoId ? String(todoId) : undefined;
+
       const shouldUpdate = Boolean(
         isEditing && apiTodoId && !apiTodoId.startsWith("quick-note-"),
       );
@@ -2644,6 +2661,7 @@ export default function TodolistScreen() {
         ? `${API_BASE_URL}/api/updateTodolist/${apiTodoId}`
         : `${API_BASE_URL}/api/createTodolist`;
 
+      // 2. Save to the backend
       const response = shouldUpdate
         ? await axios.put<ApiResponse>(url, formData, {
             headers: { ...authHeader(token) },
@@ -2654,6 +2672,8 @@ export default function TodolistScreen() {
             timeout: 20000,
           });
 
+      console.log("[Todo] API response:", response.data);
+
       if (response.data?.success !== true) {
         throw new Error(
           response.data?.message ||
@@ -2661,7 +2681,7 @@ export default function TodolistScreen() {
         );
       }
 
-      // Get the saved Todo returned by the backend.
+      // 3. Extract the saved Todo
       const responsePayload =
         response.data.todo ??
         response.data.task ??
@@ -2678,24 +2698,27 @@ export default function TodolistScreen() {
           "",
       ).trim();
 
-      // Update the Android home-screen widget.
-      // A widget error must not invalidate a successful server save.
-      try {
-        const widgetUpdated = await updateHomeNoteWidget(
-          title.trim() || "My Notes",
-          content.trim() || "No content yet.",
-        );
+      // 4. Update the Android home-screen widget.
+      // Widget failure must not prevent the save-success alert.
+      if (Platform.OS !== "web") {
+        try {
+          const widgetUpdated = await updateHomeNoteWidget(
+            title.trim() || "My Notes",
+            content.trim() || "No content yet.",
+          );
 
-        if (!widgetUpdated) {
+          if (!widgetUpdated) {
+            console.warn("[HomeNoteWidget] Update returned false.");
+          }
+        } catch (widgetError) {
           console.warn(
-            "[HomeNoteWidget] Update returned false. Check native module registration.",
+            "[HomeNoteWidget] Failed to update widget:",
+            widgetError,
           );
         }
-      } catch (widgetError) {
-        console.warn("[HomeNoteWidget] Failed to update widget:", widgetError);
       }
 
-      // Persist note appearance metadata.
+      // 5. Save note appearance metadata
       const persistedBackground =
         responsePayload?.backgroundImageUrl ||
         responsePayload?.backgroundImage ||
@@ -2729,45 +2752,52 @@ export default function TodolistScreen() {
 
       await AsyncStorage.removeItem(draftKey);
 
+      // 6. Schedule the reminder where supported.
       let reminderMessage = "";
 
-      try {
-        await scheduleLocalNotification(title.trim(), savedTodoId || null);
+      if (alarmDate) {
+        if (Platform.OS === "web") {
+          reminderMessage =
+            "\nThe Todo was saved, but desktop reminder scheduling is not configured.";
+        } else {
+          try {
+            await scheduleLocalNotification(title.trim(), savedTodoId || null);
 
-        reminderMessage = alarmDate
-          ? "\nReminder scheduled successfully."
-          : "\nNo reminder is set.";
-      } catch (notificationError) {
-        console.warn(
-          "Todo reminder could not be scheduled:",
-          notificationError,
-        );
+            reminderMessage = "\nReminder scheduled successfully.";
+          } catch (notificationError) {
+            console.warn(
+              "[Todo] Reminder scheduling failed:",
+              notificationError,
+            );
 
-        reminderMessage =
-          `\nTodo saved, but the reminder was not scheduled: ` +
-          getErrorMessage(notificationError);
+            reminderMessage =
+              "\nTodo saved, but the reminder was not scheduled: " +
+              getErrorMessage(notificationError);
+          }
+        }
+      } else {
+        reminderMessage = "\nNo reminder is set.";
       }
 
+      // 7. Show success only while this screen is mounted.
       if (!mounted.current) return;
 
-      Alert.alert(
-        "Todo saved",
+      console.log("[Todo] Save successful; showing alert.");
+
+      const successMessage =
         (isEditing
           ? "Your Todo and its selected theme/template settings were updated."
           : "Your Todo and its selected theme/template settings were saved to the database.") +
-          reminderMessage,
-        [
-          {
-            text: "OK",
-            onPress: () => router.replace("/viewlist"),
-          },
-        ],
+        reminderMessage;
+
+      showAppAlert("Todo saved", successMessage, () =>
+        router.push("/viewlist"),
       );
     } catch (error) {
       console.error("[Todo] Save failed:", error);
 
       if (mounted.current) {
-        Alert.alert("Save failed", getErrorMessage(error));
+        showAppAlert("Save failed", getErrorMessage(error));
       }
     } finally {
       savingRef.current = false;
@@ -2778,7 +2808,6 @@ export default function TodolistScreen() {
     }
   }, [
     alarmDate,
-    recurring,
     buildFormData,
     dateText,
     dueDateTime,
@@ -2794,6 +2823,7 @@ export default function TodolistScreen() {
     quickNoteColor,
     notePattern,
     noteBackgroundImageUri,
+    router,
   ]);
 
   const clearReminder = useCallback(async () => {
