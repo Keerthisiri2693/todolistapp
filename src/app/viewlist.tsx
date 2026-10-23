@@ -10,6 +10,7 @@ import * as Clipboard from "expo-clipboard";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Notifications from "expo-notifications";
 import { router, useFocusEffect } from "expo-router";
+
 import {
   ActivityIndicator,
   Alert,
@@ -31,34 +32,55 @@ import {
 import { useAppTheme } from "../../context/app-theme-context";
 
 // Show notification banners while the app is in the foreground.
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+if (Platform.OS !== "web") {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }),
+  });
+}
 
-// ============================================================
-// LOCAL REMINDER NOTIFICATIONS
-// ============================================================
+
 const REMINDER_CHANNEL_ID = "reminders";
 
 const cancelLocalReminderNotifications = async (todoId: string) => {
   const id = String(todoId || "").trim();
   if (!id) return;
 
-  const pending = await Notifications.getAllScheduledNotificationsAsync();
-  const matching = pending.filter(
-    (notification) => String(notification.content.data?.todoId ?? "") === id,
-  );
+  // Expo scheduled notifications are not supported in the web renderer.
+  if (Platform.OS === "web") {
+    console.log(
+      "Skipping local notification cancellation on web/Electron."
+    );
+    return;
+  }
 
-  await Promise.all(
-    matching.map((notification) =>
-      Notifications.cancelScheduledNotificationAsync(notification.identifier),
-    ),
-  );
+  try {
+    const pending =
+      await Notifications.getAllScheduledNotificationsAsync();
+
+    const matching = pending.filter(
+      (notification) =>
+        String(notification.content.data?.todoId ?? "") === id,
+    );
+
+    await Promise.all(
+      matching.map((notification) =>
+        Notifications.cancelScheduledNotificationAsync(
+          notification.identifier,
+        ),
+      ),
+    );
+  } catch (error) {
+    console.error(
+      "Failed to cancel reminder notifications:",
+      error,
+    );
+  }
 };
+
 
 const scheduleLocalReminderNotification = async (
   todoId: string,

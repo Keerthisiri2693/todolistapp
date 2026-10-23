@@ -1475,6 +1475,7 @@ export default function TodolistScreen() {
       dueDateTime && !Number.isNaN(dueDateTime.getTime())
         ? dueDateTime
         : parseDateText(dateText) || new Date();
+
     if (Platform.OS === "android") {
       DateTimePickerAndroid.open({
         value: initialDate,
@@ -1482,6 +1483,7 @@ export default function TodolistScreen() {
         display: "calendar",
         onChange: (event, selectedDate) => {
           if (event.type !== "set" || !selectedDate) return;
+
           const selected = new Date(selectedDate);
           selected.setHours(
             initialDate.getHours(),
@@ -1489,15 +1491,14 @@ export default function TodolistScreen() {
             0,
             0,
           );
-          const value = toDateInput(selected);
-          setTodoDate(value);
-          setDateText(value);
+
           DateTimePickerAndroid.open({
             value: selected,
             mode: "time",
             display: "clock",
             onChange: (timeEvent, selectedTime) => {
               if (timeEvent.type !== "set" || !selectedTime) return;
+
               const result = new Date(selected);
               result.setHours(
                 selectedTime.getHours(),
@@ -1505,6 +1506,7 @@ export default function TodolistScreen() {
                 0,
                 0,
               );
+
               setDueDateTime(result);
               setTodoDate(toDateInput(result));
               setDateText(toDateInput(result));
@@ -1512,13 +1514,60 @@ export default function TodolistScreen() {
           });
         },
       });
-    } else {
-      Alert.alert(
-        "Date picker",
-        "Date and time selection is currently configured for Android.",
-      );
+
+      return;
     }
+
+    if (Platform.OS === "web") {
+      const input = document.createElement("input");
+      input.type = "datetime-local";
+      input.value = toLocalDateTimeInput(initialDate);
+      input.style.position = "fixed";
+      input.style.opacity = "0";
+      input.style.pointerEvents = "none";
+
+      document.body.appendChild(input);
+
+      input.addEventListener(
+        "change",
+        () => {
+          if (input.value) {
+            const selected = new Date(input.value);
+
+            if (!Number.isNaN(selected.getTime())) {
+              setDueDateTime(selected);
+              setTodoDate(toDateInput(selected));
+              setDateText(toDateInput(selected));
+            }
+          }
+
+          input.remove();
+        },
+        { once: true },
+      );
+
+      input.addEventListener("cancel", () => input.remove(), {
+        once: true,
+      });
+
+      input.showPicker();
+      return;
+    }
+
+    Alert.alert(
+      "Date picker",
+      "Date and time selection is not supported on this platform.",
+    );
   }, [dateText, dueDateTime]);
+
+  const toLocalDateTimeInput = (date: Date) => {
+    const pad = (value: number) => String(value).padStart(2, "0");
+
+    return (
+      `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+      `T${pad(date.getHours())}:${pad(date.getMinutes())}`
+    );
+  };
 
   const setQuickDate = useCallback(
     (offset: number) => {
