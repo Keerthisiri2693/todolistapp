@@ -248,6 +248,11 @@ export default function TodolistScreen() {
     "due" | "reminder"
   >("due");
 
+  const [showDesktopReminderPicker, setShowDesktopReminderPicker] =
+    useState(false);
+
+  const [desktopReminderDate, setDesktopReminderDate] = useState("");
+  const [desktopReminderTime, setDesktopReminderTime] = useState("");
   const [reorderChecklistItems, setReorderChecklistItems] = useState<
     ReorderChecklistItem[]
   >([]);
@@ -1538,10 +1543,19 @@ export default function TodolistScreen() {
         : new Date(now.getTime() + 60 * 60 * 1000);
 
     if (Platform.OS !== "android") {
-      Alert.alert(
-        "Reminder",
-        "Reminder selection is currently configured for Android.",
+      const pad = (value: number) => String(value).padStart(2, "0");
+
+      setDesktopReminderDate(
+        `${initialDate.getFullYear()}-${pad(initialDate.getMonth() + 1)}-${pad(
+          initialDate.getDate(),
+        )}`,
       );
+
+      setDesktopReminderTime(
+        `${pad(initialDate.getHours())}:${pad(initialDate.getMinutes())}`,
+      );
+
+      setShowDesktopReminderPicker(true);
       return;
     }
 
@@ -1587,18 +1601,13 @@ export default function TodolistScreen() {
                 return;
               }
 
-              // Keep the selected reminder in state.
-              // It will be saved to the backend when the Todo is saved.
               setAlarmDate(result);
 
               Alert.alert(
                 "Reminder selected",
                 `${result.toLocaleDateString()} at ${result.toLocaleTimeString(
                   [],
-                  {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  },
+                  { hour: "2-digit", minute: "2-digit" },
                 )}\n\nSave the Todo to confirm your reminder.`,
               );
             },
@@ -4150,6 +4159,89 @@ export default function TodolistScreen() {
                   <Text style={{ fontWeight: "600", color: "#008F83" }}>
                     Done
                   </Text>
+                </Pressable>
+              </View>
+            )}
+
+            {Platform.OS === "web" && showDesktopReminderPicker && (
+              <View
+                style={{
+                  padding: 16,
+                  marginVertical: 12,
+                  borderRadius: 12,
+                  borderWidth: 1,
+                  borderColor: "#DDE7E5",
+                  gap: 12,
+                }}
+              >
+                <Text style={{ fontSize: 16, fontWeight: "600" }}>
+                  Select reminder
+                </Text>
+
+                <input
+                  type="date"
+                  value={desktopReminderDate}
+                  min={new Date().toLocaleDateString("en-CA")}
+                  onChange={(event) =>
+                    setDesktopReminderDate(event.currentTarget.value)
+                  }
+                />
+
+                <input
+                  type="time"
+                  value={desktopReminderTime}
+                  onChange={(event) =>
+                    setDesktopReminderTime(event.currentTarget.value)
+                  }
+                />
+
+                <Pressable
+                  onPress={() => {
+                    if (!desktopReminderDate || !desktopReminderTime) return;
+
+                    const result = new Date(
+                      `${desktopReminderDate}T${desktopReminderTime}`,
+                    );
+
+                    if (
+                      Number.isNaN(result.getTime()) ||
+                      result.getTime() <= Date.now()
+                    ) {
+                      Alert.alert(
+                        "Choose a future time",
+                        "The reminder must be scheduled in the future.",
+                      );
+                      return;
+                    }
+
+                    setAlarmDate(result);
+                    setShowDesktopReminderPicker(false);
+
+                    Alert.alert(
+                      "Reminder selected",
+                      `${result.toLocaleDateString()} at ${result.toLocaleTimeString(
+                        [],
+                        { hour: "2-digit", minute: "2-digit" },
+                      )}\n\nSave the Todo to confirm your reminder.`,
+                    );
+                  }}
+                  style={{
+                    padding: 12,
+                    backgroundColor: "#DDF5EE",
+                    borderRadius: 8,
+                    alignItems: "center",
+                  }}
+                >
+                  <Text style={{ color: "#008F83", fontWeight: "600" }}>
+                    Confirm reminder
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => setShowDesktopReminderPicker(false)}
+                  style={{ padding: 8, alignItems: "center" }}
+                >
+                  <Text>Cancel</Text>
                 </Pressable>
               </View>
             )}
