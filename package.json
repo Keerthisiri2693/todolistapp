@@ -5,10 +5,14 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
+    "reset-project": "node ./scripts/reset-project.js",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "build:web": "expo export --platform web",
     "desktop": "npm run build:web && electron electron/main.cjs",
-    "desktop:build": "npm run build:web && electron-builder --win nsis"
+    "desktop:build": "npm run build:web && electron-builder --win nsis",
+    "lint": "expo lint"
   },
   "dependencies": {
     "@expo/ui": "~57.0.26",

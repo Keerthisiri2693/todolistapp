@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Keyboard,
-    KeyboardAvoidingView,
-    Modal,
-    Platform,
-    Pressable,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Switch,
-    Text,
-    TextInput,
-    TouchableWithoutFeedback,
-    View,
+  ActivityIndicator,
+  Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  TouchableWithoutFeedback,
+  View,
 } from "react-native";
 
 import * as Contacts from "expo-contacts/legacy";
@@ -22,10 +22,10 @@ import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Sharing from "expo-sharing";
 import {
-    getChecklistWidgetTheme,
-    refreshChecklistHomeWidget,
-    setChecklistWidgetTheme,
-    type ChecklistWidgetTheme,
+  getChecklistWidgetTheme,
+  refreshChecklistHomeWidget,
+  setChecklistWidgetTheme,
+  type ChecklistWidgetTheme,
 } from "../../utils/homeChecklistWidget";
 
 import axios from "axios";

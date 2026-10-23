@@ -36,7 +36,6 @@ API.interceptors.request.use(
 API.interceptors.response.use(
   (response) => {
     console.log("API SUCCESS:", response.status, response.config.url);
-
     return response;
   },
   (error) => {
@@ -49,7 +48,7 @@ API.interceptors.response.use(
     console.log("PATH:", error.config?.url);
     console.log("BASE URL:", error.config?.baseURL);
     console.log("REQUEST SENT:", !!error.request);
-    console.log("================================");
+    console.log("=================================");
 
     return Promise.reject(error);
   },

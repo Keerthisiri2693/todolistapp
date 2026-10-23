@@ -25,11 +25,11 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Ionicons } from "@expo/vector-icons";
+import { NitroDigitalInk } from "@nitro-mlkit/digital-ink";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system/legacy";
 import Svg, { Path } from "react-native-svg";
 import { captureRef } from "react-native-view-shot";
-import { NitroDigitalInk } from "../../utils/NitroDigitalInk.web";
 
 import * as Clipboard from "expo-clipboard";
 
@@ -54,7 +54,7 @@ import axios from "axios";
 
 import { router, useLocalSearchParams } from "expo-router";
 
-const API_BASE_URL = "https://todolistbackend-855c.onrender.com/";
+const API_BASE_URL = "http://192.168.1.2:5003";
 
 type TodoStatus = "Pending" | "Completed" | "Overdue";
 

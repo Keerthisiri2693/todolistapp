@@ -40,7 +40,20 @@ function RootNavigator() {
                 backgroundColor: colors.background,
               },
             }}
-          />
+          >
+            <Stack.Screen
+              name="index"
+              options={{ headerShown: false }}
+            />
+
+            <Stack.Screen
+              name="security"
+              options={{
+                headerShown: false,
+                animation: "fade",
+              }}
+            />
+          </Stack>
         </SecurityGate>
       </SecurityProvider>
     </GestureHandlerRootView>
